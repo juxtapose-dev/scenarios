@@ -39,6 +39,7 @@ export function withFixtures<T extends object>(scenario: ScenarioDefinition<T>) 
 export interface CanvasContext {
   id: string;
   canvasElement: HTMLElement;
+  abortSignal: AbortSignal;
 }
 export interface ActiveSnapshot {
   storyId: string;
@@ -120,88 +121,159 @@ export function withScenario<T extends object>(
   scenario: ScenarioDefinition<T>,
   options: WithScenarioOptions<T> = {},
 ) {
-  let execution: Execution<T> | undefined;
-  let own: ActiveOwner | undefined;
-  let storyId: string | undefined;
+  interface Owner extends ActiveOwner {
+    readonly run: Execution<T>;
+  }
+  interface Binding {
+    readonly storyId: string;
+    readonly signal: AbortSignal;
+    readonly preparation: Promise<Owner>;
+    cleanupRegistered: boolean;
+    ended: boolean;
+    playing?: Promise<void>;
+  }
+  const bindings = new WeakMap<AbortSignal, Binding>();
+  let own: Owner | undefined;
   const setupTimeout = timeout(options.setupTimeoutMs ?? 5000);
   const playTimeout = timeout(options.playTimeoutMs ?? 5000);
   function current(): Execution<T> {
-    if (!execution || execution.signal.aborted || !own || active !== own)
+    if (!own || own.run.signal.aborted || active !== own)
       throw new Error("Juxtapose Scenarios execution is not active; access it after beforeEach");
-    return execution;
+    return own.run;
   }
-  async function beforeEach(context: { id: string; viewMode?: string }) {
+  function requireActive(binding: Binding, owner: Owner): Execution<T> {
+    if (binding.signal.aborted || owner.run.signal.aborted || active !== owner)
+      throw new Error(
+        "Scenario mount is stale or aborted; remount the story for a fresh execution",
+      );
+    if (owner.run.snapshot().status === "failed")
+      throw new Error("Scenario execution failed; remount the story for a fresh execution");
+    return owner.run;
+  }
+  async function beforeEach(context: { id: string; viewMode?: string; abortSignal: AbortSignal }) {
     if (context.viewMode === "docs")
       throw new Error(
-        "Juxtapose Scenarios supports isolated story canvases, not concurrent Docs stories",
+        "Juxtapose Scenarios supports isolated story canvases, not concurrent Docs stories; use withFixtures for data-only Docs",
       );
-    const ticket = ++generation;
-    const prepare = transition.then(async () => {
-      if (ticket !== generation) throw new Error("Storybook preparation superseded");
-      await active?.dispose();
-      if (ticket !== generation) throw new Error("Storybook preparation superseded");
-      let run: Execution<T>;
-      try {
-        run = await prepareScenario(scenario);
-      } catch (error) {
-        if (error instanceof ScenarioPreparationError && ticket === generation)
-          lastFailure = { storyId: context.id, execution: structuredClone(error.snapshot) };
-        throw error;
-      }
-      const owner: ActiveOwner = {
-        snapshot: () => ({ storyId: context.id, execution: run.snapshot() }),
-        async dispose() {
-          await run.dispose();
-          if (active === owner) {
-            if (run.snapshot().status === "failed") lastFailure = owner.snapshot();
-            active = undefined;
-          }
-          if (execution === run) {
-            execution = undefined;
-            own = undefined;
-          }
-        },
-      };
-      if (ticket !== generation) {
-        await owner.dispose();
-        throw new Error("Storybook preparation superseded");
-      }
-      execution = run;
-      own = owner;
-      storyId = context.id;
-      active = owner;
-      lastFailure = undefined;
-      installScenariosBridge();
-      try {
-        await bounded(() => options.setup?.(run), run.signal, setupTimeout);
-        if (ticket !== generation) throw new Error("Storybook preparation superseded");
-        if (run.snapshot().status === "failed") throw new Error("Scenario setup failed");
-        run.start();
-      } catch (error) {
-        run.fail("storybook-setup-failed", error instanceof Error ? error.message : String(error));
-        await owner.dispose();
-        throw error;
-      }
+    if (!context.abortSignal || context.abortSignal.aborted)
+      throw new Error("Scenario mount is aborted or missing its signal; remount the story");
+    const existing = bindings.get(context.abortSignal);
+    if (existing) {
+      if (existing.ended)
+        throw new Error("Scenario execution ended; remount the story for a fresh execution");
+      if (existing.storyId !== context.id)
+        throw new Error("A mount signal cannot be shared by different stories");
+      const owner = await existing.preparation;
+      requireActive(existing, owner);
+      if (existing.cleanupRegistered) return;
+      existing.cleanupRegistered = true;
       return () => owner.dispose();
-    });
-    transition = prepare.then(
+    }
+    const ticket = ++generation;
+    const binding: Binding = {
+      storyId: context.id,
+      signal: context.abortSignal,
+      cleanupRegistered: false,
+      ended: false,
+      preparation: transition.then(async () => {
+        if (ticket !== generation) throw new Error("Storybook preparation superseded");
+        if (binding.signal.aborted) throw new Error("Scenario mount aborted");
+        await active?.dispose();
+        if (ticket !== generation) throw new Error("Storybook preparation superseded");
+        if (binding.signal.aborted) throw new Error("Scenario mount aborted");
+        let run: Execution<T>;
+        try {
+          run = await prepareScenario(scenario, { signal: binding.signal });
+        } catch (error) {
+          if (
+            error instanceof ScenarioPreparationError &&
+            ticket === generation &&
+            !binding.signal.aborted
+          )
+            lastFailure = { storyId: context.id, execution: structuredClone(error.snapshot) };
+          throw error;
+        }
+        const owner: Owner = {
+          run,
+          snapshot: () => ({ storyId: context.id, execution: run.snapshot() }),
+          async dispose() {
+            binding.ended = true;
+            await run.dispose();
+            if (active === owner) {
+              if (run.snapshot().status === "failed") lastFailure = owner.snapshot();
+              active = undefined;
+            }
+            if (own === owner) own = undefined;
+          },
+        };
+        if (ticket !== generation || binding.signal.aborted || run.signal.aborted) {
+          await owner.dispose();
+          throw new Error(
+            binding.signal.aborted ? "Scenario mount aborted" : "Storybook preparation superseded",
+          );
+        }
+        const abort = () => {
+          void owner.dispose();
+        };
+        binding.signal.addEventListener("abort", abort, { once: true });
+        run.onDispose(() => binding.signal.removeEventListener("abort", abort));
+        own = owner;
+        active = owner;
+        lastFailure = undefined;
+        installScenariosBridge();
+        try {
+          if (run.snapshot().status === "failed") throw new Error("Scenario setup failed");
+          await bounded(() => options.setup?.(run), run.signal, setupTimeout);
+          if (ticket !== generation) throw new Error("Storybook preparation superseded");
+          requireActive(binding, owner);
+          if (run.snapshot().status === "failed") throw new Error("Scenario setup failed");
+          run.start();
+        } catch (error) {
+          run.fail(
+            "storybook-setup-failed",
+            error instanceof Error ? error.message : String(error),
+          );
+          await owner.dispose();
+          throw error;
+        }
+        return owner;
+      }),
+    };
+    bindings.set(context.abortSignal, binding);
+    transition = binding.preparation.then(
       () => {},
-      () => {},
+      () => {
+        binding.ended = true;
+      },
     );
-    return prepare;
+    const owner = await binding.preparation;
+    requireActive(binding, owner);
+    if (binding.cleanupRegistered) return;
+    binding.cleanupRegistered = true;
+    return () => owner.dispose();
   }
   async function play(context: CanvasContext) {
-    const run = current();
-    const owner = own;
-    if (storyId !== context.id) throw new Error("Story changed before scenario play");
-    try {
-      await bounded(() => options.play?.(context, run), run.signal, playTimeout);
-      await run.checkpoint("play-complete", () => true);
-    } catch (error) {
-      run.fail("storybook-play-failed", error instanceof Error ? error.message : String(error));
-      await owner?.dispose();
-      throw error;
+    const binding = bindings.get(context.abortSignal);
+    if (!binding || binding.storyId !== context.id || binding.signal.aborted)
+      throw new Error(
+        "Scenario mount is stale or aborted; remount the story for a fresh execution",
+      );
+    const owner = await binding.preparation;
+    const run = requireActive(binding, owner);
+    if (!binding.playing) {
+      binding.playing = (async () => {
+        try {
+          await bounded(() => options.play?.(context, run), run.signal, playTimeout);
+          requireActive(binding, owner);
+          await run.checkpoint("play-complete", () => true);
+        } catch (error) {
+          run.fail("storybook-play-failed", error instanceof Error ? error.message : String(error));
+          await owner.dispose();
+          throw error;
+        }
+      })();
     }
+    return binding.playing;
   }
   return {
     annotations: {

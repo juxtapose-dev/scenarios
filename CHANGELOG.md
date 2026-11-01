@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Bind mounted Storybook execution to its public render signal. Args rerenders
+  preserve state/readiness; remount and Rerun create a fresh run. Stale play
+  contexts cannot verify a newer execution.
+- Add cancellation support to `prepareScenario(definition, { signal })`.
+
 - Add `loadScenarioFixtures` and Storybook `withFixtures` for typed data-only
   stories, including independent concurrent Docs instances and Controls examples.
 - Verify React and Svelte fixture loading in real Storybook browser tests.

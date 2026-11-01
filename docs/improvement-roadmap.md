@@ -10,8 +10,11 @@ its acceptance evidence to refine the following one.
 - Milestone 1: implementation and full verification complete (37 unit tests,
   11 React/Svelte browser tests, strict TypeScript 6/7 installed consumers).
   Service wrapper migration is queued for the next registry release.
-- Milestone 2: next. Use Storybook's public render abort signal to distinguish
-  args rerenders from fresh runs; retain standard Rerun/remount controls.
+- Milestone 2: implementation and full verification complete (47 unit tests,
+  15 browser tests, strict installed consumers). Storybook render signals bind
+  ownership; args preserve state/readiness, Reload/Rerun creates fresh runs.
+- Milestone 3: next. Improve baseline MSW diagnostics and exercise one production
+  consumer route through the actual typed client.
 - Remaining milestones: not started; ownership/Docs expansion remains conditional.
 
 ## Objective and boundaries

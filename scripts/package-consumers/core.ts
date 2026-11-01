@@ -2,6 +2,7 @@ import {
   defineFactory,
   defineScenario,
   loadScenarioFixtures,
+  prepareScenario,
   type ScenarioDefinition,
 } from "@juxtapose/scenarios";
 
@@ -28,3 +29,6 @@ const fixtures = await fixtureLoader(scenario);
 const name: string = fixtures.person.name;
 const enabled: boolean = fixtures.person.enabled;
 export const summary = `${name}: ${enabled}`;
+
+const cancellable = await prepareScenario(scenario, { signal: new AbortController().signal });
+await cancellable.dispose();

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { defineFactory, defineScenario, loadScenarioFixtures } from "../src/index.js";
+import {
+  defineFactory,
+  defineScenario,
+  loadScenarioFixtures,
+  prepareScenario,
+} from "../src/index.js";
 import { installScenariosBridge, withFixtures } from "../src/storybook.js";
 
 const customer = defineFactory({
@@ -69,4 +74,45 @@ it("reads the matching loader's data without sharing another render's instance",
   expect(() =>
     data.read({ loaded: { juxtaposeScenarioFixtures: structuredClone(firstFixtures) } }),
   ).toThrow("missing or belongs to another loader");
+});
+
+it("core preparation rejects already-cancelled work before building fixtures", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let built = false;
+  const cancelled = defineScenario({
+    id: "cancelled/before-fixtures",
+    seed: "fixed",
+    now: "2026-01-01T00:00:00.000Z",
+    fixtures: () => {
+      built = true;
+      return { values: [42] };
+    },
+  });
+  await expect(prepareScenario(cancelled, { signal: controller.signal })).rejects.toThrow(
+    "aborted",
+  );
+  expect(built).toBe(false);
+});
+
+it("an external signal disposes a prepared execution and its resources exactly once", async () => {
+  const controller = new AbortController();
+  let disposed = 0;
+  const execution = await prepareScenario(
+    defineScenario({
+      ...scenario,
+      setup(context) {
+        context.onDispose(() => {
+          disposed++;
+        });
+      },
+    }),
+    { signal: controller.signal },
+  );
+  controller.abort();
+  await execution.dispose();
+  await execution.dispose();
+  expect(disposed).toBe(1);
+  expect(execution.signal.aborted).toBe(true);
+  expect(execution.snapshot()).toMatchObject({ disposed: true, status: "disposed" });
 });

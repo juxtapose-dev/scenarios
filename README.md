@@ -243,8 +243,8 @@ and custom diagnostic messages are authored by your project: keep secrets out.
 
 ## Verified scope
 
-The conformance workbench targets Storybook 10.6.5, React 19.3.1, MSW 3.0.3, and
-Chromium. Tests cover StrictMode mounting, warm sidebar navigation, held-response
+The conformance workbench targets Storybook 10.6.5, React 19.3.1, Svelte 5.55.7,
+MSW 3.0.3, and Chromium. Tests cover StrictMode mounting, warm sidebar navigation, held-response
 cleanup, repeated data, independent pages, and failure handling.
 
 The `withScenario` lifecycle adapter supports isolated story canvases; concurrent
@@ -252,8 +252,10 @@ Docs canvases are rejected. The fixture core is renderer-independent. Fixture-on
 consumers can prepare fresh data in a Storybook loader and dispose the execution
 before returning it, without using the adapter or acquiring an MSW lease. This
 allows independent fixture data for concurrent Docs stories.
-Args-only updates may reuse a Storybook execution; use remount to reset a scenario.
-HMR, play reruns on a newer same-ID execution, other React versions/frameworks,
+Mounted args-only updates preserve the execution, fixture mutations and readiness.
+Storybook Reload story / Interactions Rerun remounts with fresh data and a new
+execution ID. Reset Controls changes args only. See [the lifecycle contract](docs/lifecycle.md).
+HMR, other React versions/frameworks,
 SSR/server-component requests, and cross-browser pixels are not guaranteed.
 Reload the preview when changing setup code. No claim of pixel determinism is
 made from these DOM and network tests.

@@ -17,7 +17,8 @@
     "README.md",
     "LICENSE",
     "docs/fixture-loading.md",
-    "docs/consumer-protocol.md"
+    "docs/consumer-protocol.md",
+    "docs/lifecycle.md"
   ],
   "exports": {
     ".": {

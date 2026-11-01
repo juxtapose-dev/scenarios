@@ -253,9 +253,14 @@ function bounded<T>(
       );
   });
 }
+export interface PrepareScenarioOptions {
+  readonly signal?: AbortSignal;
+}
 export async function prepareScenario<T extends object>(
   definition: ScenarioDefinition<T>,
+  options: PrepareScenarioOptions = {},
 ): Promise<Execution<T>> {
+  if (options.signal?.aborted) throw new Error("Scenario preparation aborted");
   const descriptor = describeScenario(definition);
   const keys = new Set<string>();
   const executionId = crypto.randomUUID();
@@ -400,8 +405,18 @@ export async function prepareScenario<T extends object>(
       return disposal;
     },
   };
+  if (options.signal) {
+    const signal = options.signal;
+    const abort = () => {
+      void execution.dispose();
+    };
+    execution.onDispose(() => signal.removeEventListener("abort", abort));
+    signal.addEventListener("abort", abort, { once: true });
+    if (signal.aborted) abort();
+  }
   try {
     await bounded(() => definition.setup?.(execution), controller.signal, 5000);
+    if (disposed) throw new Error("Scenario preparation aborted");
     status = failed ? "failed" : "prepared";
     return execution;
   } catch (error) {
