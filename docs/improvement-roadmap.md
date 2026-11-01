@@ -32,9 +32,10 @@ its acceptance evidence to refine the following one.
 - Remaining: conditional instance ownership and expanded Docs; expanded
   compatibility/browser matrix, large-consumer incremental/HMR measurements,
   additional Faker locales. Release automation now has a manually dispatched OIDC
-  workflow and verified-tarball handoff; first live publishing validation remains
-  pending. No new support claims for
-  concurrent lifecycle Docs or untested frameworks/browsers.
+  workflow and verified-tarball handoff. Version 0.3.0 published through OIDC;
+  registry integrity and provenance were confirmed. The release resumed successfully
+  after registry propagation exceeded the initial verification window. No new
+  support claims for concurrent lifecycle Docs or untested frameworks/browsers.
 
 ## Objective and boundaries
 

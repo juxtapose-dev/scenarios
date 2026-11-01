@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,7 +87,11 @@ export function publicationState(
 }
 export async function registryRecord(version: string): Promise<RegistryRecord | null> {
   if (version !== "latest") versionParts(version);
-  const response = await fetch(`${registry}${version}`, { signal: AbortSignal.timeout(30000) });
+  const response = await fetch(`${registry}${version}?releaseCheck=${randomUUID()}`, {
+    cache: "no-store",
+    headers: { "cache-control": "no-cache" },
+    signal: AbortSignal.timeout(30000),
+  });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Registry lookup failed: HTTP ${response.status}`);
   const value: unknown = await response.json();
@@ -102,11 +106,14 @@ export async function registryRecord(version: string): Promise<RegistryRecord | 
   versionParts(value.version);
   return { version: value.version, integrity: value.dist.integrity };
 }
-function run(command: string, args: readonly string[]): string {
-  const result = spawnSync(command, args, { encoding: "utf8" });
+function run(command: string, args: readonly string[], liveOutput = false): string {
+  const result = spawnSync(command, args, {
+    encoding: "utf8",
+    stdio: liveOutput ? "inherit" : "pipe",
+  });
   if (result.status !== 0)
     throw new Error(`${command} failed:\n${result.stdout}\n${result.stderr}`);
-  return result.stdout.trim();
+  return result.stdout?.trim() ?? "";
 }
 function context() {
   const revision = process.env.GITHUB_SHA;
@@ -177,17 +184,21 @@ async function prepare(directory: string): Promise<void> {
 async function publish(directory: string): Promise<void> {
   const manifest = await loadArtifact(directory);
   if ((await state(manifest)) === "publish") {
-    run("npm", [
-      "publish",
-      join(directory, artifactName),
-      "--access",
-      "public",
-      "--tag",
-      "latest",
-      "--ignore-scripts",
-    ]);
+    run(
+      "npm",
+      [
+        "publish",
+        join(directory, artifactName),
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--ignore-scripts",
+      ],
+      true,
+    );
   } else console.log("Registry already contains the identical artifact; skipping publication");
-  for (let attempt = 0; attempt < 30; attempt++) {
+  for (let attempt = 0; attempt < 90; attempt++) {
     const published = await registryRecord(manifest.version);
     if (published) {
       publicationState(manifest, published, null);
@@ -197,7 +208,7 @@ async function publish(directory: string): Promise<void> {
         return;
       }
     }
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(resolve, 2000));
   }
   throw new Error(
     "Publication returned but registry verification is still pending; retry this workflow",
