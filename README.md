@@ -26,7 +26,7 @@ and an intentionally unexpected API request. The last story is supposed to fail.
 Install the package in your Storybook project:
 
 ```sh
-pnpm add -D @juxtapose/scenarios@0.2.1
+pnpm add -D @juxtapose/scenarios@0.3.0
 ```
 
 The package is ESM and requires Node 22.19 or later. Storybook and MSW are
@@ -37,7 +37,7 @@ Its public entry points are:
 import { defineFactory, defineScenario } from "@juxtapose/scenarios";
 import { withScenario } from "@juxtapose/scenarios/storybook";
 import { startMswWorker } from "@juxtapose/scenarios/msw";
-// Next release after 0.2.1:
+// Read-only inspection:
 import { inspectScenario } from "@juxtapose/scenarios/inspection";
 ```
 
@@ -248,7 +248,7 @@ The bounded MSW journal contains only unhandled requests, with redacted scope
 paths and lease IDs. It is not a full network trace. Metadata, seeds, descriptions,
 and custom diagnostic messages are authored by your project: keep secrets out.
 
-The next release adds a lightweight `./inspection` entry point for explicit
+Version 0.3.0 adds a lightweight `./inspection` entry point for explicit
 catalogs, Storybook public-index resolution, readiness explanations and evidence
 metadata tied to a build revision. See [the agent workflow](docs/agent-workflow.md).
 These helpers assess readiness; capture and approval remain external.

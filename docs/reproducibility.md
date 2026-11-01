@@ -1,6 +1,6 @@
 # Reproducing data and the application environment
 
-These additions are available in the next release after 0.2.1. English (`en`) is
+These additions are available from 0.3.0. English (`en`) is
 the supported Faker locale; it is independent of the browser's language. Each
 named factory gets a new Faker instance with an independent seeded stream.
 There is no ambient singleton to reseed.

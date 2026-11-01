@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.3.0 — 2026-11-01
+
+- Record executed factory keys/versions, optional scenario and source revisions,
+  and declared capture checkpoints. Protocol v1 remains compatible with older
+  observations; fixture values are excluded from inspection metadata.
+- Add the lightweight `@juxtapose/scenarios/inspection` entry point: explicit
+  catalogs, Storybook public-index resolution, readiness explanations, and
+  evidence metadata tied to a build revision. Pinned captures stop when their
+  story or execution changes, fails, or is disposed.
+- Defer Faker loading until preparation while preserving English-only tree
+  shaking and existing fixture streams. Generator loading is bounded and
+  abortable, and failures retain preparation diagnostics.
+- Add executable Orval/MSW response validation and injected-clock examples,
+  plus guides for reproducibility, runtime contracts, and agent capture workflows.
+- Measure package/import/bundle costs and guard against accidental inclusion of
+  additional Faker locales or framework runtimes.
+- Introduce manually triggered, verified-artifact releases through npm Trusted
+  Publishing, with registry integrity verification and resumable release records.
+
+Existing factory and Storybook APIs remain supported. The new inspection helpers
+require `play-complete` plus declared/requested checkpoints; capture tools still
+own font, asset, layout, and paint checks. Concurrent lifecycle Docs, additional
+Faker locales, feature flags, and experiments remain outside the supported scope.
+
 ## 0.2.1 — 2026-11-01
 
 Fix reentrant disposal: an abort listener that calls `dispose()` again now shares
