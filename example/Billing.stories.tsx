@@ -10,8 +10,12 @@ const meta: Meta<typeof Billing> = { title: "Billing", component: Billing };
 export default meta;
 
 function story(mode: BillingMode) {
-  const scenario = billingScenario(`billing-${mode}`);
+  const scenario = billingScenario(
+    `billing-${mode}`,
+    mode === "loading" ? ["loading"] : mode === "paid" ? ["loaded", "paid"] : ["loaded"],
+  );
   const scenarioStory = withScenario(scenario, {
+    sourceRevision: "synthetic-example-v1",
     setup: (execution) => attachBilling(execution, execution.fixtures, mode),
     async play({ canvasElement }, execution) {
       if (mode === "loading") {
@@ -37,7 +41,7 @@ function story(mode: BillingMode) {
       await execution.checkpoint("loaded", () => {
         if (mode === "empty")
           return canvasElement.textContent?.includes("No invoices yet.") === true;
-        if (mode === "error" || mode === "unexpected")
+        if (mode === "error" || mode === "unexpected" || mode === "invalid")
           return canvasElement.textContent?.includes("Unable to load invoices.") === true;
         return canvasElement.textContent?.includes("invoice-101") === true;
       });
@@ -61,3 +65,6 @@ export const ExpectedError = story("error");
 export const Loading = story("loading");
 export const Paid = story("paid");
 export const UnexpectedRequest = story("unexpected");
+
+// Deliberately broken mock: validates failure diagnostics, not a ready review state.
+export const InvalidResponse = story("invalid");

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { createScenarioEvidence, inspectScenario } from "../../src/inspection.js";
 import type {} from "../../src/storybook.js";
 
 async function openStory(page: Page, story: string) {
@@ -30,6 +31,21 @@ test("generated client loads repeatable data in independent browser pages", asyn
   expect(await secondPage.locator("#storybook-root").textContent()).toEqual(content);
   expect(second?.execution.descriptor).toEqual(first?.execution.descriptor);
   expect(second?.execution.executionId).not.toEqual(first?.execution.executionId);
+  if (!first || !second) throw new Error("Missing instrumented execution");
+  expect(inspectScenario(first, { storyId: "billing--success" }).status).toBe("ready");
+  expect(
+    inspectScenario(second, {
+      storyId: "billing--success",
+      executionId: first.execution.executionId,
+    }).code,
+  ).toBe("execution-replaced");
+  expect(createScenarioEvidence(first)).toMatchObject({
+    sourceRevision: "synthetic-example-v1",
+    factories: [
+      { key: "customer", version: "1" },
+      { key: "invoice", version: "1" },
+    ],
+  });
   expect(JSON.stringify(first)).not.toContain("@example");
   await secondPage.close();
 });
@@ -92,4 +108,20 @@ test("warm Storybook navigation disposes a held response and resets fixtures", a
     expect.objectContaining({ name: "play-complete", status: "ready" }),
   );
   expect(await preview.locator("#storybook-root").textContent()).toEqual(before);
+});
+
+test("invalid mock contract fails inspection instead of blessing the error UI", async ({
+  page,
+}) => {
+  await openStory(page, "invalid-response");
+  await expect
+    .poll(() => page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive()?.execution.status))
+    .toBe("failed");
+  const observed = await page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
+  expect(observed?.execution.diagnostics).toContainEqual(
+    expect.objectContaining({ code: "msw-handler-exception" }),
+  );
+  expect(inspectScenario(observed, { storyId: "billing--invalid-response" }).code).toBe(
+    "execution-failed",
+  );
 });
