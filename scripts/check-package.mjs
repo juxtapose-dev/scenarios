@@ -187,6 +187,10 @@ try {
   `,
   );
   run(process.execPath, ["smoke.mjs"], directory);
+  if (process.env.SCENARIOS_PACKAGE_OUTPUT_DIR) {
+    await mkdir(process.env.SCENARIOS_PACKAGE_OUTPUT_DIR, { recursive: true });
+    await copyFile(tarball, join(process.env.SCENARIOS_PACKAGE_OUTPUT_DIR, "scenarios.tgz"));
+  }
   console.log(
     `Package smoke passed: ${files.length} allowlisted files, isolated imports, deterministic fixtures, strict TypeScript 6/7 consumers and negative diagnostics.`,
   );

@@ -31,7 +31,9 @@ its acceptance evidence to refine the following one.
   unreleased additions after 0.2.1.
 - Remaining: conditional instance ownership and expanded Docs; expanded
   compatibility/browser matrix, large-consumer incremental/HMR measurements,
-  additional Faker locales, and release ergonomics. No new support claims for
+  additional Faker locales. Release automation now has a manually dispatched OIDC
+  workflow and verified-tarball handoff; first live publishing validation remains
+  pending. No new support claims for
   concurrent lifecycle Docs or untested frameworks/browsers.
 
 ## Objective and boundaries

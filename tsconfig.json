@@ -21,6 +21,7 @@
     ".storybook",
     "*.config.ts",
     "example-svelte",
-    ".storybook-svelte"
+    ".storybook-svelte",
+    "scripts/release"
   ]
 }
