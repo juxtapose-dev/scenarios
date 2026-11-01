@@ -1,6 +1,6 @@
 # Catalog, inspection, and evidence metadata
 
-These helpers are available in the next release after 0.2.1 from
+These helpers are available from 0.3.0 through
 `@juxtapose/scenarios/inspection`. This entry point has no runtime dependency on
 Faker, Storybook, MSW, or Juxtapose. It assesses typed protocol-v1 observations;
 it is not a validator for arbitrary untrusted JSON.

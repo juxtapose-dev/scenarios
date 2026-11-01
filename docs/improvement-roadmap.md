@@ -28,7 +28,7 @@ its acceptance evidence to refine the following one.
   from 8: factory/source revision metadata, environment and runtime-validation
   examples, explicit catalog/index export, inspection/evidence helpers and deferred
   Faker loading. Verification evidence is recorded with the batch PR. These are
-  unreleased additions after 0.2.1.
+  included in 0.3.0.
 - Remaining: conditional instance ownership and expanded Docs; expanded
   compatibility/browser matrix, large-consumer incremental/HMR measurements,
   additional Faker locales. Release automation now has a manually dispatched OIDC

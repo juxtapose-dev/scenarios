@@ -29,7 +29,7 @@ No Juxtapose dependency or integration patch is required.
 
 The descriptor is abbreviated above; actual output includes seed algorithm,
 Faker version, locale, fixed instant, seed, and environment
-metadata. The next release adds optional scenario revision/declared checkpoints
+metadata. Version 0.3.0 adds optional scenario revision/declared checkpoints
 to descriptors and executed `factories` (key/version) plus optional `sourceRevision`
 to snapshots. These are additive protocol-v1 fields; consumers must tolerate their
 absence in 0.2.1 and earlier. Declared checkpoints are capture requirements, not
