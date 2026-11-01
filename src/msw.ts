@@ -1,4 +1,5 @@
 import type { AnyHandler, SharedOptions } from "msw";
+import type { SetupWorker, StartOptions } from "msw/browser";
 import type { ExecutionObserver } from "./index.js";
 
 /** The host must grant exclusive ownership of runtime handler changes. */
@@ -34,7 +35,10 @@ const JOURNAL_LIMIT = 100;
 let nextLeaseId = 0;
 
 export function createMswSession(host: MswHost, options: MswSessionOptions) {
-  if (leases.has(host)) throw new Error("Cannot create a session while the host is leased");
+  if (leases.has(host))
+    throw new Error(
+      "Cannot create a session while the MSW host is leased; reuse one session and release its execution before creating another",
+    );
   const baseline = [...options.baselineHandlers];
   function requireBaseline(): void {
     const existing = host.listHandlers();
@@ -42,7 +46,9 @@ export function createMswSession(host: MswHost, options: MswSessionOptions) {
       existing.length !== baseline.length ||
       existing.some((handler, index) => handler !== baseline[index])
     ) {
-      throw new Error("Declared baseline must match the host's current handlers in order");
+      throw new Error(
+        "MSW baseline mismatch: pass the host's original handlers in order and let one session own runtime handler changes; release the current execution before attaching another",
+      );
     }
   }
   requireBaseline();
@@ -84,7 +90,9 @@ export function createMswSession(host: MswHost, options: MswSessionOptions) {
     handlers: readonly AnyHandler[],
   ): () => Promise<void> {
     if (leases.has(host))
-      throw new Error("MSW host already has an active Juxtapose Scenarios session");
+      throw new Error(
+        "MSW host already has an active execution; reuse one session and dispose the current execution before attaching another",
+      );
     if (observer.signal.aborted) throw new Error("Cannot attach a disposed execution");
     requireBaseline();
     leases.set(host, handleUnhandled);
@@ -191,4 +199,17 @@ export function onUnhandledFrame(session: {
       session.onUnhandledRequest(data.request);
     }
   };
+}
+
+/** Start a caller-owned browser worker with scoped unexpected-request handling wired in.
+ * Call once per worker, retain the returned session, and stop the worker yourself.
+ */
+export async function startMswWorker(
+  worker: MswHost & Pick<SetupWorker, "start">,
+  sessionOptions: MswSessionOptions,
+  startOptions: Omit<StartOptions, "onUnhandledFrame"> = {},
+) {
+  const session = createMswSession(worker, sessionOptions);
+  await worker.start({ ...startOptions, onUnhandledFrame: onUnhandledFrame(session) });
+  return session;
 }

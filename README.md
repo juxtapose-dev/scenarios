@@ -26,7 +26,7 @@ and an intentionally unexpected API request. The last story is supposed to fail.
 Install the package in your Storybook project:
 
 ```sh
-pnpm add -D @juxtapose/scenarios@0.1.0
+pnpm add -D @juxtapose/scenarios@0.2.0
 ```
 
 The package is ESM and requires Node 22.19 or later. Storybook and MSW are
@@ -36,7 +36,7 @@ Its public entry points are:
 ```ts
 import { defineFactory, defineScenario } from "@juxtapose/scenarios";
 import { withScenario } from "@juxtapose/scenarios/storybook";
-import { createMswSession, onUnhandledFrame } from "@juxtapose/scenarios/msw";
+import { startMswWorker } from "@juxtapose/scenarios/msw";
 ```
 
 ## Define repeatable data
@@ -94,7 +94,7 @@ and Svelte stories. Definitions with setup callbacks are rejected; use
 `withScenario` for mounted setup, checkpoints, and MSW ownership.
 
 See [fixture-only loading](docs/fixture-loading.md) for Controls, loader composition,
-and framework examples. These APIs are new in the next release after 0.1.0.
+and framework examples. These APIs are available from 0.2.0.
 
 ## Connect Storybook and MSW
 
@@ -109,23 +109,20 @@ Create one worker and one session in a project module:
 
 ```ts
 import { setupWorker } from "msw/browser";
-import { createMswSession, onUnhandledFrame } from "@juxtapose/scenarios/msw";
+import { startMswWorker } from "@juxtapose/scenarios/msw";
 
 export const worker = setupWorker();
-export const session = createMswSession(worker, {
-  baselineHandlers: [],
-  apiPrefixes: ["/api"],
-});
-
-export const workerReady = worker.start({
-  onUnhandledFrame: onUnhandledFrame(session),
-  quiet: true,
-});
+export const sessionReady = startMswWorker(
+  worker,
+  { baselineHandlers: [], apiPrefixes: ["/api"] },
+  { quiet: true },
+);
 ```
 
-MSW 3 uses `onUnhandledFrame`; older MSW examples using `onUnhandledRequest` are
-not configuration for this release. Calling `session.onUnhandledRequest(request)`
-directly is available for a custom startup adapter.
+The helper awaits startup and wires the required MSW 3 unhandled-frame callback.
+For an existing worker or a Node host, manual `createMswSession` wiring remains
+available. See [MSW integration](docs/msw-integration.md) for ownership, startup
+options, transport failures and migration from another handler manager.
 
 Wrap a normal CSF story:
 
@@ -134,11 +131,11 @@ import { http, HttpResponse } from "msw/http";
 import { withScenario } from "@juxtapose/scenarios/storybook";
 import { Account } from "./Account";
 import { overdueAccount } from "./scenarios";
-import { session, workerReady } from "./network";
+import { sessionReady } from "./network";
 
 const account = withScenario(overdueAccount, {
   async setup(execution) {
-    await workerReady;
+    const session = await sessionReady;
     session.attach(execution, [
       http.get("/api/customer", () => HttpResponse.json(execution.fixtures.customer)),
     ]);

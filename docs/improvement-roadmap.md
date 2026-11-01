@@ -13,9 +13,14 @@ its acceptance evidence to refine the following one.
 - Milestone 2: implementation and full verification complete (47 unit tests,
   15 browser tests, strict installed consumers). Storybook render signals bind
   ownership; args preserve state/readiness, Reload/Rerun creates fresh runs.
-- Milestone 3: next. Improve baseline MSW diagnostics and exercise one production
-  consumer route through the actual typed client.
-- Remaining milestones: not started; ownership/Docs expansion remains conditional.
+- Milestone 3: implemented and verified in the library (52 unit tests,
+  15 browser tests, strict installed consumers) and the production-consumer
+  harness. Includes typed real-client request cancellation and expected/unexpected
+  network outcome scenarios. Final registry release/service PR update pending.
+- Run boundary: user requested shipping milestones 1–3, then stopping.
+- Remaining milestones: not implemented. Instance ownership and expanded Docs
+  remain conditional; environment/data contracts, agent inspection and broader
+  compatibility/performance remain future work.
 
 ## Objective and boundaries
 

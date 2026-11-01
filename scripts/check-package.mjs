@@ -91,14 +91,14 @@ try {
   const files = run("tar", ["-tzf", tarball]).trim().split("\n");
   for (const file of files) {
     if (
-      !/^package\/(dist\/[a-zA-Z0-9/.-]+\.(js|d\.ts)|package\.json|README\.md|LICENSE|docs\/(fixture-loading|consumer-protocol|lifecycle)\.md)$/.test(
+      !/^package\/(dist\/[a-zA-Z0-9/.-]+\.(js|d\.ts)|package\.json|README\.md|LICENSE|docs\/(fixture-loading|consumer-protocol|lifecycle|msw-integration)\.md)$/.test(
         file,
       )
     ) {
       throw new Error(`Unexpected published file: ${file}`);
     }
   }
-  for (const guide of ["fixture-loading", "consumer-protocol", "lifecycle"]) {
+  for (const guide of ["fixture-loading", "consumer-protocol", "lifecycle", "msw-integration"]) {
     if (!files.includes(`package/docs/${guide}.md`))
       throw new Error(`Missing published consumer guide: ${guide}`);
   }

@@ -1,8 +1,15 @@
+import type { AnyHandler } from "msw";
+import type { SetupWorker } from "msw/browser";
 import { HttpResponse, http } from "msw/http";
 import { setupServer } from "msw/node";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExecutionObserver } from "../src/index.js";
-import { createMswSession, createResponseGate, onUnhandledFrame } from "../src/msw.js";
+import {
+  createMswSession,
+  createResponseGate,
+  onUnhandledFrame,
+  startMswWorker,
+} from "../src/msw.js";
 
 function observer() {
   const controller = new AbortController();
@@ -32,6 +39,23 @@ const baseline = http.get("http://example.test/api/items", () =>
 );
 const server = setupServer(baseline);
 let listening = false;
+function worker(start: SetupWorker["start"]) {
+  return {
+    events: server.events,
+    listHandlers: () => server.listHandlers(),
+    use: (...handlers: AnyHandler[]) => server.use(...handlers),
+    resetHandlers: (...handlers: AnyHandler[]) => server.resetHandlers(...handlers),
+    start,
+  };
+}
+function deferred() {
+  let release = () => {};
+  const promise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { promise, release: () => release() };
+}
+
 afterEach(() => {
   if (listening) server.close();
   listening = false;
@@ -39,6 +63,131 @@ afterEach(() => {
 });
 
 describe("MSW sessions", () => {
+  it("starts a caller-owned worker once with scoped unexpected-request handling", async () => {
+    let starts = 0;
+    const host = worker(async (options) => {
+      starts += 1;
+      expect(options?.quiet).toBe(true);
+      expect(options?.onUnhandledFrame).toBeTypeOf("function");
+      listening = true;
+      server.listen(options);
+      return undefined;
+    });
+    const session = await startMswWorker(
+      host,
+      {
+        baselineHandlers: [baseline],
+        apiPrefixes: ["/api"],
+      },
+      { quiet: true },
+    );
+    const first = observer();
+    session.attach(first.execution, []);
+    expect((await fetch("http://example.test/api/private-id?secret=redacted")).status).toBe(500);
+    expect(first.failures).toEqual([
+      "unhandled-api-request: Unhandled GET request in API scope /api",
+    ]);
+    await first.dispose();
+    const second = observer();
+    session.attach(second.execution, []);
+    expect(await (await fetch("http://example.test/api/items")).json()).toEqual({
+      source: "baseline",
+    });
+    expect(starts).toBe(1);
+    await second.dispose();
+  });
+
+  it("propagates worker startup failures without acquiring a lease or changing handlers", async () => {
+    const failure = new Error("worker start failed");
+    const host = worker(async () => {
+      throw failure;
+    });
+    await expect(
+      startMswWorker(host, {
+        baselineHandlers: [baseline],
+        apiPrefixes: ["/api"],
+      }),
+    ).rejects.toBe(failure);
+    expect(host.listHandlers()).toEqual([baseline]);
+    const session = createMswSession(host, { baselineHandlers: [baseline], apiPrefixes: ["/api"] });
+    const run = observer();
+    session.attach(run.execution, []);
+    await run.dispose();
+  });
+
+  it("validates ownership before starting the worker", async () => {
+    let starts = 0;
+    const host = worker(async () => {
+      starts += 1;
+      return undefined;
+    });
+    await expect(
+      startMswWorker(host, { baselineHandlers: [], apiPrefixes: ["/api"] }),
+    ).rejects.toThrow(/baseline/);
+    expect(starts).toBe(0);
+  });
+
+  it("classifies an explicitly handled transport error as an expected response", async () => {
+    const session = createMswSession(server, {
+      baselineHandlers: [baseline],
+      apiPrefixes: ["/api"],
+    });
+    listening = true;
+    server.listen({ onUnhandledFrame: onUnhandledFrame(session) });
+    const run = observer();
+    session.attach(run.execution, [
+      http.get("http://example.test/api/offline", () => HttpResponse.error()),
+    ]);
+    await expect(fetch("http://example.test/api/offline")).rejects.toThrow();
+    expect(run.failures).toEqual([]);
+    expect(session.journal()).toEqual([]);
+    await run.dispose();
+  });
+
+  it("keeps expected old gate cancellation from failing a replacement lease", async () => {
+    const session = createMswSession(server, {
+      baselineHandlers: [baseline],
+      apiPrefixes: ["/api"],
+    });
+    listening = true;
+    server.listen({ onUnhandledFrame: onUnhandledFrame(session) });
+    let exceptions = 0;
+    const onException = () => {
+      exceptions += 1;
+    };
+    server.events.on("unhandledException", onException);
+    const replacementAttached = deferred();
+    const old = observer();
+    const gate = createResponseGate(old.execution.signal);
+    const started = deferred();
+    session.attach(old.execution, [
+      http.get("http://example.test/api/held", async () => {
+        started.release();
+        try {
+          await gate.wait();
+        } catch (error) {
+          if (old.execution.signal.aborted) return HttpResponse.error();
+          throw error;
+        }
+        return HttpResponse.json({ ready: true });
+      }),
+    ]);
+    const response = fetch("http://example.test/api/held");
+    const rejected = expect(response).rejects.toThrow();
+    await started.promise;
+    await old.dispose();
+    const current = observer();
+    session.attach(current.execution, []);
+    replacementAttached.release();
+    await rejected;
+    server.events.removeListener("unhandledException", onException);
+    expect(exceptions).toBe(0);
+    expect(old.failures).toEqual([]);
+    expect(current.failures).toEqual([]);
+    expect(session.journal()).toEqual([]);
+    await current.dispose();
+  });
+
   it("serves stable responses, rejects overlap and restores the declared baseline", async () => {
     const session = createMswSession(server, {
       baselineHandlers: [baseline],

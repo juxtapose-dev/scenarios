@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-11-01
+
+- Add `startMswWorker` to wire browser startup and strict unhandled-request
+  reporting, with actionable handler ownership diagnostics and migration guidance.
+- Verify intentional transport errors and cancellation of held handlers without
+  attributing expected teardown exceptions to replacement scenarios.
 
 - Bind mounted Storybook execution to its public render signal. Args rerenders
   preserve state/readiness; remount and Rerun create a fresh run. Stale play
@@ -12,6 +17,10 @@
 - Verify React and Svelte fixture loading in real Storybook browser tests.
 - Compile isolated package consumers with TypeScript 6 and 7, and verify the
   minimum supported Node version in CI.
+
+Direct callers of the generated lifecycle hooks must now pass the same
+`abortSignal` to `beforeEach` and `play` for a mount. Normal Storybook usage
+supplies it automatically. A new signal represents a fresh mount.
 
 ## 0.1.0 — 2026-11-01
 
