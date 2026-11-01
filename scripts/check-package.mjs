@@ -3,7 +3,7 @@ import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const directory = await mkdtemp(join(tmpdir(), "rehearsal-package-"));
+const directory = await mkdtemp(join(tmpdir(), "juxtapose-scenarios-package-"));
 function run(command, args, cwd = process.cwd()) {
   const result = spawnSync(command, args, { cwd, encoding: "utf8" });
   if (result.status !== 0)
@@ -44,15 +44,15 @@ try {
   await writeFile(
     join(directory, "smoke.mjs"),
     `
-    import { defineFactory, defineScenario, prepareScenario } from '@juxtapose/rehearsal';
-    import { rehearse } from '@juxtapose/rehearsal/storybook';
-    import { createMswSession } from '@juxtapose/rehearsal/msw';
+    import { defineFactory, defineScenario, prepareScenario } from '@juxtapose/scenarios';
+    import { withScenario } from '@juxtapose/scenarios/storybook';
+    import { createMswSession } from '@juxtapose/scenarios/msw';
     const person = defineFactory({ version: '1', build: ({ faker }) => ({ name: faker.person.fullName() }) });
     const scenario = defineScenario({ id: 'pack/smoke', seed: 'public', now: '2026-01-01T00:00:00.000Z', fixtures: ({ factory }) => ({ person: factory('primary', person) }) });
     const a = await prepareScenario(scenario);
     const b = await prepareScenario(scenario);
     if (JSON.stringify(a.fixtures) !== JSON.stringify(b.fixtures)) throw new Error('Nondeterministic package');
-    if (!rehearse(scenario).annotations || typeof createMswSession !== 'function') throw new Error('Broken exports');
+    if (!withScenario(scenario).annotations || typeof createMswSession !== 'function') throw new Error('Broken exports');
     await a.dispose(); await b.dispose();
   `,
   );

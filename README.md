@@ -1,14 +1,14 @@
-# Rehearsal
+# Juxtapose Scenarios
 
 Reproducible UI scenarios for Storybook development and testing.
 
-`@juxtapose/rehearsal` combines named fixtures, isolated Faker generators,
+`@juxtapose/scenarios` combines named fixtures, isolated Faker generators,
 explicit flags and experiment treatments, scoped MSW mocking, and bounded
 readiness checkpoints. Components keep using their real API clients. Every
 execution gets fresh data and cleanup, and exposes a small inspection record.
 
-Rehearsal is independent of Juxtapose. It does not capture screenshots, compare
-pixels, approve changes, or require an account.
+Juxtapose Scenarios does not depend on Juxtapose’s visual testing packages. It
+does not capture screenshots, compare pixels, approve changes, or require an account.
 
 ## Try the example
 
@@ -28,9 +28,9 @@ The initial package is prepared for release; it is not automatically published.
 Run `pnpm pack` to produce an installable tarball. Its public entry points are:
 
 ```ts
-import { defineFactory, defineScenario } from "@juxtapose/rehearsal";
-import { rehearse } from "@juxtapose/rehearsal/storybook";
-import { createMswSession, onUnhandledFrame } from "@juxtapose/rehearsal/msw";
+import { defineFactory, defineScenario } from "@juxtapose/scenarios";
+import { withScenario } from "@juxtapose/scenarios/storybook";
+import { createMswSession, onUnhandledFrame } from "@juxtapose/scenarios/msw";
 ```
 
 ## Define repeatable data
@@ -39,7 +39,7 @@ Factories receive their own Faker instance. A named fixture's random stream is
 independent of the order in which unrelated fixtures are built.
 
 ```ts
-import { defineFactory, defineScenario } from "@juxtapose/rehearsal";
+import { defineFactory, defineScenario } from "@juxtapose/scenarios";
 
 const customerFactory = defineFactory({
   version: "1",
@@ -93,7 +93,7 @@ Create one worker and one session in a project module:
 
 ```ts
 import { setupWorker } from "msw/browser";
-import { createMswSession, onUnhandledFrame } from "@juxtapose/rehearsal/msw";
+import { createMswSession, onUnhandledFrame } from "@juxtapose/scenarios/msw";
 
 export const worker = setupWorker();
 export const session = createMswSession(worker, {
@@ -115,12 +115,12 @@ Wrap a normal CSF story:
 
 ```tsx
 import { http, HttpResponse } from "msw/http";
-import { rehearse } from "@juxtapose/rehearsal/storybook";
+import { withScenario } from "@juxtapose/scenarios/storybook";
 import { Account } from "./Account";
 import { overdueAccount } from "./scenarios";
 import { session, workerReady } from "./network";
 
-const account = rehearse(overdueAccount, {
+const account = withScenario(overdueAccount, {
   async setup(execution) {
     await workerReady;
     session.attach(execution, [
@@ -139,7 +139,7 @@ export default { component: Account };
 export const Overdue = { ...account.annotations };
 ```
 
-Rehearsal owns the story's `beforeEach` and `play` annotations. Put custom setup
+Juxtapose Scenarios owns the story's `beforeEach` and `play` annotations. Put custom setup
 and play in the callbacks above; overwriting the generated hooks bypasses the
 contract. Other ordinary story options remain available. For provider wiring,
 `account.current()` supplies the typed execution after preparation.
@@ -161,7 +161,8 @@ transport errors. Asset traffic outside configured scopes is allowed.
 
 ## Setup and cleanup
 
-`scenario.setup` is reusable setup; `rehearse(...).setup` is Storybook-specific.
+`scenario.setup` is reusable setup; the `setup` option passed to `withScenario`
+is Storybook-specific.
 Register resources immediately with `execution.onDispose`. Cleanup aborts the
 execution signal first, then runs every callback once, in reverse registration
 order. Each callback has a one-second bound; failures remain in diagnostics.
@@ -191,7 +192,7 @@ checks treatment names against a catalog, with inferred TypeScript types and
 runtime validation:
 
 ```ts
-import { resolveFlags, resolveExperiments } from "@juxtapose/rehearsal";
+import { resolveFlags, resolveExperiments } from "@juxtapose/scenarios";
 
 const flags = resolveFlags({ showPayButton: true }, { showPayButton: false });
 const experiments = resolveExperiments(
@@ -210,7 +211,7 @@ composition with explicit scenario IDs; there is no hidden inheritance system.
 
 Keep generated API types/clients and project-owned domain fixtures separate.
 Use generated models as factory result types. MSW intercepts the real client's
-requests; Rehearsal does not replace generated hooks or generate another client.
+requests; Juxtapose Scenarios does not replace generated hooks or generate another client.
 
 The checked-in synthetic OpenAPI contract and generated client can be regenerated:
 
@@ -225,13 +226,13 @@ constitute runtime response validation. In particular, do not trust a generated
 error's typed `info` payload without validating it.
 
 Generated Faker factories that import a shared singleton are not automatically
-isolated. Prefer Rehearsal factories returning Orval model types, or materialize
+isolated. Prefer Juxtapose Scenarios factories returning Orval model types, or materialize
 static fixtures separately. Never globally reseed Faker around concurrent requests.
 
 ## Inspection for agents and capture tools
 
 `describeScenario` returns declaration metadata without running fixtures. In a
-Storybook preview, `window.__REHEARSAL__.getActive()` returns a versioned snapshot
+Storybook preview, `window.__JUXTAPOSE_SCENARIOS__.getActive()` returns a versioned snapshot
 containing story/scenario/execution identity, status, checkpoint results, resolved
 assignments, deterministic inputs, fixture keys, and diagnostics. Fixture payloads
 are excluded. Snapshot values are detached from runtime state.

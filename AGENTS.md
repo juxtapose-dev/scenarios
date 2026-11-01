@@ -1,4 +1,4 @@
-# Working on Rehearsal
+# Working on Juxtapose Scenarios
 
 Keep this package independent of Juxtapose and focused on Storybook. Do not add
 another renderer or a generic plugin framework without a concrete requirement.

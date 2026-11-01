@@ -12,7 +12,7 @@ const factory = `const customer = defineFactory({ version: "1", build: ({ faker 
 const scenario = `const scenario = defineScenario({ id: "typed.sample", seed: "fixed", now: "2026-01-01T00:00:00.000Z", fixtures: context => ({ customer: context.factory("customer", customer) }) });\n`;
 
 async function compile(source: string): Promise<{ status: number | null; output: string }> {
-  const directory = await mkdtemp(join(tmpdir(), "rehearsal-types-"));
+  const directory = await mkdtemp(join(tmpdir(), "juxtapose-scenarios-types-"));
   const file = join(directory, "fixture.mts");
   try {
     await writeFile(file, imports + source);

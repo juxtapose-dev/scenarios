@@ -1,11 +1,11 @@
-# Rehearsal capture consumer protocol
+# Juxtapose Scenarios capture consumer protocol
 
 Protocol version 1 is a read-only JavaScript bridge in the isolated Storybook
-preview document. It is available after Rehearsal starts preparing a story or
-after explicitly calling `installRehearsalBridge()` from preview configuration.
+preview document. It is available after Juxtapose Scenarios starts preparing a story or
+after explicitly calling `installScenariosBridge()` from preview configuration.
 No Juxtapose dependency or integration patch is required.
 
-`window.__REHEARSAL__?.getActive()` returns null, or:
+`window.__JUXTAPOSE_SCENARIOS__?.getActive()` returns null, or:
 
 ```json
 {
@@ -65,5 +65,5 @@ code that ignores the abort signal.
 Snapshots exclude fixture values, HTTP bodies, headers, query values, and absolute
 source paths. They include project-authored metadata and diagnostic messages;
 these can contain sensitive data if the application puts it there. Consumers must
-apply their own artifact retention and publication policies. Rehearsal never
+apply their own artifact retention and publication policies. Juxtapose Scenarios never
 uploads snapshots or communicates with a hosted service.

@@ -1,3 +1,3 @@
-import { installRehearsalBridge } from "../src/storybook.js";
+import { installScenariosBridge } from "../src/storybook.js";
 
-installRehearsalBridge();
+installScenariosBridge();

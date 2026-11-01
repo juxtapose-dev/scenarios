@@ -1,6 +1,6 @@
 import type { Meta } from "@storybook/react-vite";
 import { StrictMode } from "react";
-import { rehearse } from "../src/storybook.js";
+import { withScenario } from "../src/storybook.js";
 import { Billing } from "./Billing.js";
 import { billingScenario } from "./fixtures.js";
 import { getInvoices } from "./generated/client.js";
@@ -11,7 +11,7 @@ export default meta;
 
 function story(mode: BillingMode) {
   const scenario = billingScenario(`billing-${mode}`);
-  const rehearsal = rehearse(scenario, {
+  const scenarioStory = withScenario(scenario, {
     setup: (execution) => attachBilling(execution, execution.fixtures, mode),
     async play({ canvasElement }, execution) {
       if (mode === "loading") {
@@ -44,9 +44,9 @@ function story(mode: BillingMode) {
     },
   });
   return {
-    ...rehearsal.annotations,
+    ...scenarioStory.annotations,
     render: () => {
-      const descriptor = rehearsal.current().snapshot().descriptor;
+      const descriptor = scenarioStory.current().snapshot().descriptor;
       return (
         <StrictMode>
           <Billing

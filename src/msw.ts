@@ -83,7 +83,8 @@ export function createMswSession(host: MswHost, options: MswSessionOptions) {
     observer: ExecutionObserver,
     handlers: readonly AnyHandler[],
   ): () => Promise<void> {
-    if (leases.has(host)) throw new Error("MSW host already has an active Rehearsal session");
+    if (leases.has(host))
+      throw new Error("MSW host already has an active Juxtapose Scenarios session");
     if (observer.signal.aborted) throw new Error("Cannot attach a disposed execution");
     requireBaseline();
     leases.set(host, handleUnhandled);

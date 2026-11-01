@@ -1,12 +1,12 @@
 {
-  "name": "@juxtapose/rehearsal",
+  "name": "@juxtapose/scenarios",
   "version": "0.1.0",
   "description": "Reproducible UI scenarios for Storybook development and testing.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/juxtapose-dev/rehearsal.git"
+    "url": "git+https://github.com/juxtapose-dev/scenarios.git"
   },
   "engines": {
     "node": ">=22.19.0"

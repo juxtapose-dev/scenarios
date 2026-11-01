@@ -1,9 +1,9 @@
-# Rehearsal implementation plan
+# Juxtapose Scenarios implementation plan
 
 Status: reviewed, implemented, and locally verified for the initial release.
 
-Build `@juxtapose/rehearsal` as an independent TypeScript library in the
-`juxtapose-dev/rehearsal` repository. Target Storybook only. Rehearsal defines
+Build `@juxtapose/scenarios` as an independent TypeScript library in the
+`juxtapose-dev/scenarios` repository. Target Storybook only. Juxtapose Scenarios defines
 repeatable UI conditions; the visual testing tool remains a separate consumer.
 The initial release must demonstrate the complete loop in a real Storybook,
 including actual HTTP requests and an Orval-generated client.
@@ -36,13 +36,13 @@ including actual HTTP requests and an Orval-generated client.
 
 ## Public modules
 
-`@juxtapose/rehearsal`: scenario definitions, typed fixtures, executions,
+`@juxtapose/scenarios`: scenario definitions, typed fixtures, executions,
 checkpoints, inspection records, and composition.
 
-`@juxtapose/rehearsal/storybook`: Storybook lifecycle integration and access to
+`@juxtapose/scenarios/storybook`: Storybook lifecycle integration and access to
 the active execution from story code. Preserve ordinary stories and play functions.
 
-`@juxtapose/rehearsal/msw`: connect prepared handlers to an existing MSW worker
+`@juxtapose/scenarios/msw`: connect prepared handlers to an existing MSW worker
 or server; strict unexpected-API policy and request diagnostics. One worker owner.
 
 Orval should need a recipe and a tested generated-client example, not a dependency
@@ -164,7 +164,7 @@ fixture APIs exist in every release. Never hand-edit generated output. Regenerat
 has a check command. Public sample data is synthetic and contains no actual users.
 
 Generated Faker factories importing a singleton are not treated as isolated.
-Recommend Rehearsal factories typed against generated models, or separately
+Recommend Juxtapose Scenarios factories typed against generated models, or separately
 materialized static fixture JSON. Do not introduce unsafe global reseeding wrappers.
 
 ## Inspection and capture integration
@@ -284,7 +284,7 @@ requests throw and call execution.fail. No API scope defaults that mask failures
 Provide abortable `createResponseGate(signal)` for held responses. Node tests use
 actual MSW; root implementation integrates it into browser Storybook.
 
-Storybook exports `rehearse(scenario, {setup?, play?})` returning `annotations`
+Storybook exports `withScenario(scenario, {setup?, play?})` returning `annotations`
 (beforeEach, play, parameters) and `current()` for typed provider wiring. Setup
 receives the prepared execution; play receives a minimal canvas context and that
 execution. Both callbacks are wrapped for failure/disposal. No global generic

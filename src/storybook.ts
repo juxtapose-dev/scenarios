@@ -15,13 +15,13 @@ export interface ActiveSnapshot {
   storyId: string;
   execution: ExecutionSnapshot;
 }
-export interface RehearsalBridge {
+export interface ScenariosBridge {
   readonly protocolVersion: 1;
   getActive(): ActiveSnapshot | null;
 }
 declare global {
   interface Window {
-    __REHEARSAL__?: RehearsalBridge;
+    __JUXTAPOSE_SCENARIOS__?: ScenariosBridge;
   }
 }
 interface ActiveOwner {
@@ -34,15 +34,15 @@ let transition = Promise.resolve();
 let generation = 0;
 
 /** A read-only, versioned bridge; fixtures never cross this boundary. */
-export function installRehearsalBridge(): RehearsalBridge {
-  const bridge: RehearsalBridge = Object.freeze({
+export function installScenariosBridge(): ScenariosBridge {
+  const bridge: ScenariosBridge = Object.freeze({
     protocolVersion: 1,
     getActive: () => structuredClone(active?.snapshot() ?? lastFailure ?? null),
   });
-  if (typeof window !== "undefined") window.__REHEARSAL__ = bridge;
+  if (typeof window !== "undefined") window.__JUXTAPOSE_SCENARIOS__ = bridge;
   return bridge;
 }
-export interface RehearseOptions<T extends object> {
+export interface WithScenarioOptions<T extends object> {
   setup?: (execution: Execution<T>) => void | Promise<void>;
   play?: (context: CanvasContext, execution: Execution<T>) => void | Promise<void>;
   setupTimeoutMs?: number;
@@ -87,9 +87,9 @@ function bounded(
 }
 
 /** Spread annotations into a CSF story. Concurrent Docs canvases are unsupported. */
-export function rehearse<T extends object>(
+export function withScenario<T extends object>(
   scenario: ScenarioDefinition<T>,
-  options: RehearseOptions<T> = {},
+  options: WithScenarioOptions<T> = {},
 ) {
   let execution: Execution<T> | undefined;
   let own: ActiveOwner | undefined;
@@ -98,12 +98,14 @@ export function rehearse<T extends object>(
   const playTimeout = timeout(options.playTimeoutMs ?? 5000);
   function current(): Execution<T> {
     if (!execution || execution.signal.aborted || !own || active !== own)
-      throw new Error("Rehearsal execution is not active; access it after beforeEach");
+      throw new Error("Juxtapose Scenarios execution is not active; access it after beforeEach");
     return execution;
   }
   async function beforeEach(context: { id: string; viewMode?: string }) {
     if (context.viewMode === "docs")
-      throw new Error("Rehearsal supports isolated story canvases, not concurrent Docs stories");
+      throw new Error(
+        "Juxtapose Scenarios supports isolated story canvases, not concurrent Docs stories",
+      );
     const ticket = ++generation;
     const prepare = transition.then(async () => {
       if (ticket !== generation) throw new Error("Storybook preparation superseded");
@@ -140,7 +142,7 @@ export function rehearse<T extends object>(
       storyId = context.id;
       active = owner;
       lastFailure = undefined;
-      installRehearsalBridge();
+      installScenariosBridge();
       try {
         await bounded(() => options.setup?.(run), run.signal, setupTimeout);
         if (ticket !== generation) throw new Error("Storybook preparation superseded");
@@ -173,7 +175,11 @@ export function rehearse<T extends object>(
     }
   }
   return {
-    annotations: { parameters: { rehearsal: describeScenario(scenario) }, beforeEach, play },
+    annotations: {
+      parameters: { juxtaposeScenarios: describeScenario(scenario) },
+      beforeEach,
+      play,
+    },
     current,
   };
 }

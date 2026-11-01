@@ -7,9 +7,9 @@ async function openStory(page: Page, story: string) {
 
 async function expectReady(page: Page, checkpoint: string) {
   await expect
-    .poll(() => page.evaluate(() => window.__REHEARSAL__?.getActive()?.execution.status))
+    .poll(() => page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive()?.execution.status))
     .toBe("ready");
-  const active = await page.evaluate(() => window.__REHEARSAL__?.getActive());
+  const active = await page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
   expect(active?.execution.diagnostics).toEqual([]);
   expect(active?.execution.checkpoints).toContainEqual(
     expect.objectContaining({ name: checkpoint, status: "ready" }),
@@ -52,9 +52,9 @@ test("payment updates survive a repeated generated-client read", async ({ page }
 test("unhandled API traffic cannot produce a green checkpoint", async ({ page }) => {
   await openStory(page, "unexpected-request");
   await expect
-    .poll(() => page.evaluate(() => window.__REHEARSAL__?.getActive()?.execution.status))
+    .poll(() => page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive()?.execution.status))
     .toBe("failed");
-  const active = await page.evaluate(() => window.__REHEARSAL__?.getActive());
+  const active = await page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
   expect(active?.execution.diagnostics).toContainEqual(
     expect.objectContaining({ code: "unhandled-api-request" }),
   );
@@ -69,7 +69,8 @@ test("warm Storybook navigation disposes a held response and resets fixtures", a
   await page.goto("/?path=/story/billing--success");
   const preview = page.frameLocator("#storybook-preview-iframe");
   await expect(preview.getByText("invoice-101", { exact: false })).toBeVisible();
-  const snapshot = () => preview.locator("body").evaluate(() => window.__REHEARSAL__?.getActive());
+  const snapshot = () =>
+    preview.locator("body").evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
   await expect.poll(async () => (await snapshot())?.execution.status).toBe("ready");
   const originalExecution = (await snapshot())?.execution.executionId;
   expect(originalExecution).toBeTruthy();
