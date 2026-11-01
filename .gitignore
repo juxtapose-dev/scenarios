@@ -1,0 +1,12 @@
+node_modules/
+dist/
+storybook-static/
+test-results/
+playwright-report/
+coverage/
+*.tgz
+.env
+.env.*
+*.log
+.DS_Store
+example/public/mockServiceWorker.js

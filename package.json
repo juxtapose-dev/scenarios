@@ -1,0 +1,86 @@
+{
+  "name": "@juxtapose/rehearsal",
+  "version": "0.1.0",
+  "description": "Reproducible UI scenarios for Storybook development and testing.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juxtapose-dev/rehearsal.git"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./storybook": {
+      "types": "./dist/storybook.d.ts",
+      "import": "./dist/storybook.js"
+    },
+    "./msw": {
+      "types": "./dist/msw.d.ts",
+      "import": "./dist/msw.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint . && node scripts/check-types.mjs",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check . && node scripts/check-types.mjs",
+    "fix": "biome check --write .",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "storybook": "pnpm prepare:example && storybook dev -p 6006 --disable-telemetry",
+    "build:storybook": "pnpm prepare:example && storybook build --disable-telemetry",
+    "generate": "orval --config orval.config.ts",
+    "verify": "pnpm check && pnpm typecheck && pnpm test && pnpm check:generated && pnpm build && pnpm build:storybook && pnpm test:browser && pnpm check:package",
+    "prepack": "pnpm build",
+    "prepare:example": "msw init example/public --no-save",
+    "check:generated": "node scripts/check-generated.mjs",
+    "check:package": "node scripts/check-package.mjs"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0"
+  },
+  "peerDependencies": {
+    "msw": "^3.0.3",
+    "storybook": "~10.6.5"
+  },
+  "peerDependenciesMeta": {
+    "msw": {
+      "optional": true
+    },
+    "storybook": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@babel/parser": "8.0.10",
+    "@biomejs/biome": "2.6.4",
+    "@playwright/test": "1.64.1",
+    "@storybook/react": "10.6.5",
+    "@storybook/react-vite": "10.6.5",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "msw": "3.0.3",
+    "orval": "8.46.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "storybook": "10.6.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
