@@ -19,9 +19,11 @@ const invoice = defineFactory<Invoice>({
   }),
 });
 
-export function billingScenario(id: string) {
+export function billingScenario(id: string, checkpoints: readonly string[] = ["loaded"]) {
   return defineScenario({
     id,
+    revision: "1",
+    checkpoints,
     description: `Billing: ${id}`,
     seed: "billing-demo",
     now: "2026-01-15T12:00:00.000Z",

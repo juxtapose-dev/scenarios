@@ -91,14 +91,23 @@ try {
   const files = run("tar", ["-tzf", tarball]).trim().split("\n");
   for (const file of files) {
     if (
-      !/^package\/(dist\/[a-zA-Z0-9/.-]+\.(js|d\.ts)|package\.json|README\.md|LICENSE|docs\/(fixture-loading|consumer-protocol|lifecycle|msw-integration)\.md)$/.test(
+      !/^package\/(dist\/[a-zA-Z0-9/.-]+\.(js|d\.ts)|package\.json|README\.md|LICENSE|docs\/(fixture-loading|consumer-protocol|lifecycle|msw-integration|reproducibility|orval-msw|agent-workflow|costs)\.md)$/.test(
         file,
       )
     ) {
       throw new Error(`Unexpected published file: ${file}`);
     }
   }
-  for (const guide of ["fixture-loading", "consumer-protocol", "lifecycle", "msw-integration"]) {
+  for (const guide of [
+    "fixture-loading",
+    "consumer-protocol",
+    "lifecycle",
+    "msw-integration",
+    "reproducibility",
+    "orval-msw",
+    "agent-workflow",
+    "costs",
+  ]) {
     if (!files.includes(`package/docs/${guide}.md`))
       throw new Error(`Missing published consumer guide: ${guide}`);
   }
@@ -108,14 +117,21 @@ try {
   const coreDependencies = await readdir(join(coreDirectory, "node_modules"));
   if (coreDependencies.includes("msw") || coreDependencies.includes("storybook"))
     throw new Error("Core-only consumer unexpectedly installed optional peers");
-  await copyConsumers(coreDirectory, ["core.ts", "negative-field.ts", "negative-override.ts"]);
-  await compileConsumer(coreDirectory, ["core.ts"]);
+  await copyConsumers(coreDirectory, [
+    "core.ts",
+    "inspection.ts",
+    "negative-field.ts",
+    "negative-override.ts",
+  ]);
+  await compileConsumer(coreDirectory, ["core.ts", "inspection.ts"]);
   await compileConsumer(coreDirectory, ["negative-field.ts"], 2339);
   await compileConsumer(coreDirectory, ["negative-override.ts"], 2322);
   await writeFile(
     join(coreDirectory, "smoke.mjs"),
     `
     import { defineScenario, loadScenarioFixtures } from '@juxtapose/scenarios';
+    import { inspectScenario } from '@juxtapose/scenarios/inspection';
+    if (inspectScenario(undefined, { storyId: 'pack/core-only' }).code !== 'instrumentation-missing') throw new Error('Broken inspection export');
     const scenario = defineScenario({ id: 'pack/core-only', seed: 'public', now: '2026-01-01T00:00:00.000Z', fixtures: () => ({ values: [42] }) });
     const fixtures = await loadScenarioFixtures(scenario);
     const repeated = await loadScenarioFixtures(scenario);

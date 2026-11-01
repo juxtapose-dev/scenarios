@@ -75,6 +75,7 @@ export function installScenariosBridge(): ScenariosBridge {
 export interface WithScenarioOptions<T extends object> {
   setup?: (execution: Execution<T>) => void | Promise<void>;
   play?: (context: CanvasContext, execution: Execution<T>) => void | Promise<void>;
+  sourceRevision?: string;
   setupTimeoutMs?: number;
   playTimeoutMs?: number;
 }
@@ -183,7 +184,12 @@ export function withScenario<T extends object>(
         if (binding.signal.aborted) throw new Error("Scenario mount aborted");
         let run: Execution<T>;
         try {
-          run = await prepareScenario(scenario, { signal: binding.signal });
+          run = await prepareScenario(scenario, {
+            signal: binding.signal,
+            ...(options.sourceRevision !== undefined
+              ? { sourceRevision: options.sourceRevision }
+              : {}),
+          });
         } catch (error) {
           if (
             error instanceof ScenarioPreparationError &&

@@ -37,6 +37,8 @@ Its public entry points are:
 import { defineFactory, defineScenario } from "@juxtapose/scenarios";
 import { withScenario } from "@juxtapose/scenarios/storybook";
 import { startMswWorker } from "@juxtapose/scenarios/msw";
+// Next release after 0.2.1:
+import { inspectScenario } from "@juxtapose/scenarios/inspection";
 ```
 
 ## Define repeatable data
@@ -83,6 +85,11 @@ date generation and the factory clock; it does not patch the application's Date,
 timers, Math.random, crypto, browser locale, or timezone. Inject those application
 dependencies explicitly. Deterministic IDs are fixture conveniences, not globally
 unique or cryptographically secure identifiers.
+
+See [reproduction and environment contracts](docs/reproducibility.md) for executed
+factory versions, source/scenario revisions, injected clocks, and browser settings.
+Core defers loading Faker until preparation; declaration/catalog inspection does
+not initialize generators.
 
 ## Fixture-only stories
 
@@ -220,6 +227,9 @@ Generated Faker factories that import a shared singleton are not automatically
 isolated. Prefer Juxtapose Scenarios factories returning Orval model types, or materialize
 static fixtures separately. Never globally reseed Faker around concurrent requests.
 
+See the [Orval/MSW adoption guide](docs/orval-msw.md) for a complete typed-factory
+and runtime-validation workflow, including deliberate invalid payload scenarios.
+
 ## Inspection for agents and capture tools
 
 `describeScenario` returns declaration metadata without running fixtures. In a
@@ -237,6 +247,11 @@ identity and `disposed`. See [the consumer protocol](docs/consumer-protocol.md).
 The bounded MSW journal contains only unhandled requests, with redacted scope
 paths and lease IDs. It is not a full network trace. Metadata, seeds, descriptions,
 and custom diagnostic messages are authored by your project: keep secrets out.
+
+The next release adds a lightweight `./inspection` entry point for explicit
+catalogs, Storybook public-index resolution, readiness explanations and evidence
+metadata tied to a build revision. See [the agent workflow](docs/agent-workflow.md).
+These helpers assess readiness; capture and approval remain external.
 
 ## Verified scope
 
@@ -256,6 +271,9 @@ HMR, other React versions/frameworks,
 SSR/server-component requests, and cross-browser pixels are not guaranteed.
 Reload the preview when changing setup code. No claim of pixel determinism is
 made from these DOM and network tests.
+
+See [measured costs and adoption ergonomics](docs/costs.md) for bundle/import
+measurements and the rationale for keeping the current helper APIs.
 
 ## Development
 

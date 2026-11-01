@@ -1,4 +1,4 @@
-import { en, Faker } from "@faker-js/faker";
+import type { Faker } from "@faker-js/faker";
 
 export type JsonValue =
   | null
@@ -27,13 +27,17 @@ export interface ExecutionObserver {
 export interface SetupContext<T extends object> extends ExecutionObserver {
   readonly fixtures: T;
 }
-export interface ScenarioDefinition<T extends object> {
+export interface ScenarioMetadata {
   readonly id: string;
   readonly description?: string;
   readonly seed: string;
   readonly now: string;
-  readonly fixtures: (context: FixtureContext) => T;
+  readonly revision?: string;
+  readonly checkpoints?: readonly string[];
   readonly environment?: Readonly<Record<string, JsonValue>>;
+}
+export interface ScenarioDefinition<T extends object> extends ScenarioMetadata {
+  readonly fixtures: (context: FixtureContext) => T;
   readonly setup?: (context: SetupContext<T>) => void | Promise<void>;
 }
 export interface ScenarioDescriptor {
@@ -46,6 +50,8 @@ export interface ScenarioDescriptor {
   readonly fakerVersion: "10.6.0";
   readonly locale: "en";
   readonly environment: Readonly<Record<string, JsonValue>>;
+  readonly revision?: string;
+  readonly checkpoints?: readonly string[];
 }
 export type ExecutionStatus =
   | "preparing"
@@ -63,6 +69,10 @@ export interface CheckpointRecord {
   readonly status: "running" | "ready" | "failed";
   readonly timeoutMs: number;
 }
+export interface FactoryRecord {
+  readonly key: string;
+  readonly version: string;
+}
 export interface ExecutionSnapshot {
   readonly protocolVersion: 1;
   readonly scenarioId: string;
@@ -71,6 +81,9 @@ export interface ExecutionSnapshot {
   readonly disposed: boolean;
   readonly descriptor: ScenarioDescriptor;
   readonly fixtureKeys: readonly string[];
+  /** Additive protocol-v1 fields; absent in 0.2.1 and earlier. */
+  readonly factories?: readonly FactoryRecord[];
+  readonly sourceRevision?: string;
   readonly checkpoints: readonly CheckpointRecord[];
   readonly diagnostics: readonly Diagnostic[];
 }
@@ -162,7 +175,7 @@ function cloneFixtures<T>(value: T): T {
   validateValue(value, new Set());
   return structuredClone(value);
 }
-function validate<T extends object>(definition: ScenarioDefinition<T>): void {
+function validate(definition: ScenarioMetadata): void {
   validKey(definition.id);
   if (!definition.seed) throw new Error("Seed must not be empty");
   const date = new Date(definition.now);
@@ -172,6 +185,11 @@ function validate<T extends object>(definition: ScenarioDefinition<T>): void {
     date.toISOString() !== definition.now
   )
     throw new Error("now must be a canonical ISO UTC instant");
+  if (definition.revision !== undefined) validKey(definition.revision);
+  const checkpoints = definition.checkpoints ?? [];
+  for (const name of checkpoints) validKey(name);
+  if (new Set(checkpoints).size !== checkpoints.length)
+    throw new Error("Declared checkpoints must be unique");
   jsonSafe(definition.environment ?? {});
 }
 function hash(parts: readonly string[]): number {
@@ -192,6 +210,7 @@ export function defineScenario<T extends object>(
   validate(definition);
   return Object.freeze({
     ...definition,
+    ...(definition.checkpoints ? { checkpoints: Object.freeze([...definition.checkpoints]) } : {}),
     ...(definition.environment
       ? { environment: freezeMetadata(structuredClone(definition.environment)) }
       : {}),
@@ -210,6 +229,8 @@ export function describeScenario<T extends object>(
     seedAlgorithm: "fnv1a-utf8-v1",
     fakerVersion: "10.6.0",
     locale: "en",
+    ...(definition.revision !== undefined ? { revision: definition.revision } : {}),
+    ...(definition.checkpoints ? { checkpoints: [...definition.checkpoints] } : {}),
     environment: structuredClone(definition.environment ?? {}),
   };
 }
@@ -255,23 +276,48 @@ function bounded<T>(
 }
 export interface PrepareScenarioOptions {
   readonly signal?: AbortSignal;
+  /** Consumer-supplied build identity, never inferred from a scenario seed. */
+  readonly sourceRevision?: string;
 }
 export async function prepareScenario<T extends object>(
   definition: ScenarioDefinition<T>,
   options: PrepareScenarioOptions = {},
 ): Promise<Execution<T>> {
   if (options.signal?.aborted) throw new Error("Scenario preparation aborted");
+  if (
+    options.sourceRevision !== undefined &&
+    (options.sourceRevision.trim() !== options.sourceRevision ||
+      !options.sourceRevision ||
+      options.sourceRevision.length > 200)
+  )
+    throw new Error(
+      "sourceRevision must be a nonempty, trimmed identifier of at most 200 characters",
+    );
+  const source =
+    options.sourceRevision !== undefined ? { sourceRevision: options.sourceRevision } : {};
   const descriptor = describeScenario(definition);
   const keys = new Set<string>();
+  const factories: FactoryRecord[] = [];
   const executionId = crypto.randomUUID();
-  const fixtures = (() => {
+  const fixtures = await (async () => {
     try {
+      const { en, Faker } = await bounded(
+        async () => {
+          const { en, Faker } = await import("@faker-js/faker");
+          return { en, Faker };
+        },
+        options.signal,
+        5000,
+      );
+      if (options.signal?.aborted) throw new Error("Scenario preparation aborted");
       return cloneFixtures(
         definition.fixtures({
           factory(key, factory, overrides) {
             validKey(key);
             if (keys.has(key)) throw new Error(`Duplicate fixture key: ${key}`);
+            validKey(factory.version);
             keys.add(key);
+            factories.push({ key, version: factory.version });
             const faker = new Faker({ locale: [en] });
             faker.seed(hash(["v1", definition.seed, factory.version, key]));
             faker.setDefaultRefDate(definition.now);
@@ -302,6 +348,8 @@ export async function prepareScenario<T extends object>(
           disposed: true,
           descriptor,
           fixtureKeys: [...keys],
+          factories: [...factories],
+          ...source,
           checkpoints: [],
           diagnostics: [{ code: "fixtures", message: message(error) }],
         },
@@ -384,6 +432,8 @@ export async function prepareScenario<T extends object>(
         disposed,
         descriptor,
         fixtureKeys: [...keys],
+        factories: [...factories],
+        ...source,
         checkpoints: [...checkpoints.values()],
         diagnostics,
       });

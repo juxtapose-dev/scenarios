@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { createScenarioEvidence, inspectScenario } from "../../src/inspection.js";
 import type {} from "../../src/storybook.js";
 
 async function openStory(page: Page, story: string) {
@@ -30,6 +31,21 @@ test("generated client loads repeatable data in independent browser pages", asyn
   expect(await secondPage.locator("#storybook-root").textContent()).toEqual(content);
   expect(second?.execution.descriptor).toEqual(first?.execution.descriptor);
   expect(second?.execution.executionId).not.toEqual(first?.execution.executionId);
+  if (!first || !second) throw new Error("Missing instrumented execution");
+  expect(inspectScenario(first, { storyId: "billing--success" }).status).toBe("ready");
+  expect(
+    inspectScenario(second, {
+      storyId: "billing--success",
+      executionId: first.execution.executionId,
+    }).code,
+  ).toBe("execution-replaced");
+  expect(createScenarioEvidence(first)).toMatchObject({
+    sourceRevision: "synthetic-example-v1",
+    factories: [
+      { key: "customer", version: "1" },
+      { key: "invoice", version: "1" },
+    ],
+  });
   expect(JSON.stringify(first)).not.toContain("@example");
   await secondPage.close();
 });
@@ -92,4 +108,60 @@ test("warm Storybook navigation disposes a held response and resets fixtures", a
     expect.objectContaining({ name: "play-complete", status: "ready" }),
   );
   expect(await preview.locator("#storybook-root").textContent()).toEqual(before);
+});
+
+test("invalid mock contract fails inspection instead of blessing the error UI", async ({
+  page,
+}) => {
+  await openStory(page, "invalid-response");
+  await expect
+    .poll(() => page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive()?.execution.status))
+    .toBe("failed");
+  const observed = await page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
+  expect(observed?.execution.diagnostics).toContainEqual(
+    expect.objectContaining({ code: "msw-handler-exception" }),
+  );
+  expect(inspectScenario(observed, { storyId: "billing--invalid-response" }).code).toBe(
+    "execution-failed",
+  );
+});
+
+test("a stalled generator chunk fails preparation and a reload can recover", async ({ page }) => {
+  let release = () => {};
+  let requested = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const loading = new Promise<void>((resolve) => {
+    requested = resolve;
+  });
+  await page.route("**/assets/dist-*.js", async (route) => {
+    requested();
+    await gate;
+    await route.continue();
+  });
+  try {
+    await page.goto("/iframe.html?id=billing--success&viewMode=story", {
+      waitUntil: "domcontentloaded",
+    });
+    await loading;
+    await expect
+      .poll(
+        () => page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive()?.execution.status),
+        { timeout: 10000 },
+      )
+      .toBe("failed");
+    const failed = await page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
+    expect(failed?.execution.diagnostics).toContainEqual({
+      code: "fixtures",
+      message: "Timed out after 5000ms",
+    });
+    release();
+    await page.unrouteAll({ behavior: "wait" });
+    await page.reload();
+    const recovered = await expectReady(page, "loaded");
+    expect(recovered?.execution.executionId).not.toBe(failed?.execution.executionId);
+  } finally {
+    release();
+  }
 });

@@ -29,7 +29,11 @@ No Juxtapose dependency or integration patch is required.
 
 The descriptor is abbreviated above; actual output includes seed algorithm,
 Faker version, locale, fixed instant, seed, and environment
-metadata. A descriptor is not a content hash of callbacks or fixtures. Consumers
+metadata. The next release adds optional scenario revision/declared checkpoints
+to descriptors and executed `factories` (key/version) plus optional `sourceRevision`
+to snapshots. These are additive protocol-v1 fields; consumers must tolerate their
+absence in 0.2.1 and earlier. Declared checkpoints are capture requirements, not
+automatically executed predicates. A descriptor is not a content hash of callbacks or fixtures. Consumers
 must separately record the build/source revision and capture environment.
 
 ## Capture algorithm
@@ -67,3 +71,6 @@ source paths. They include project-authored metadata and diagnostic messages;
 these can contain sensitive data if the application puts it there. Consumers must
 apply their own artifact retention and publication policies. Juxtapose Scenarios never
 uploads snapshots or communicates with a hosted service.
+
+The optional [inspection helpers and agent workflow](agent-workflow.md) implement
+readiness assessment and revision-associated metadata without a capture dependency.

@@ -19,10 +19,20 @@ its acceptance evidence to refine the following one.
   harness (313 unit tests and 67 browser tests). Includes real-client request
   cancellation and expected/unexpected network outcomes. Released as npm 0.2.0;
   service PR #414 uses the registry package.
-- Run boundary: user requested shipping milestones 1–3, then stopping.
-- Remaining milestones: not implemented. Instance ownership and expanded Docs
-  remain conditional; environment/data contracts, agent inspection and broader
-  compatibility/performance remain future work.
+- Release follow-up: 0.2.1 published with reentrant disposal protection; service PR
+  #414 merged using the registry dependency.
+- Next batch: user authorized environment/data contracts, Orval/MSW guidance,
+  agent inspection and measured ergonomics/costs. Release ergonomics remains
+  deferred until the next release. See `current-batch-plan.md`.
+- Current batch implements the baseline of milestones 6–7 and cost measurement
+  from 8: factory/source revision metadata, environment and runtime-validation
+  examples, explicit catalog/index export, inspection/evidence helpers and deferred
+  Faker loading. Verification evidence is recorded with the batch PR. These are
+  unreleased additions after 0.2.1.
+- Remaining: conditional instance ownership and expanded Docs; expanded
+  compatibility/browser matrix, large-consumer incremental/HMR measurements,
+  additional Faker locales, and release ergonomics. No new support claims for
+  concurrent lifecycle Docs or untested frameworks/browsers.
 
 ## Objective and boundaries
 
