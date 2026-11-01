@@ -132,3 +132,27 @@ it("rejects publishing from a pull-request context before reading artifacts or c
   expect(result.status).not.toBe(0);
   expect(result.stderr).toContain("Release must run for an exact main commit");
 });
+
+it("avoids a cached missing-version response while checking a new publication", async () => {
+  const requests = new Set<string>();
+  vi.stubGlobal("fetch", async (url: string) => {
+    requests.add(url);
+    if (url === "https://registry.npmjs.org/@juxtapose%2fscenarios/0.3.0")
+      return new Response(null, { status: 404 });
+    return Response.json({
+      name: manifest.name,
+      version: manifest.version,
+      dist: { integrity: manifest.integrity },
+    });
+  });
+  await expect(registryRecord("0.3.0")).resolves.toEqual({
+    version: manifest.version,
+    integrity: manifest.integrity,
+  });
+  await expect(registryRecord("0.3.0")).resolves.toEqual({
+    version: manifest.version,
+    integrity: manifest.integrity,
+  });
+  expect(requests.size).toBe(2);
+  for (const url of requests) expect(new URL(url).pathname).toBe("/@juxtapose%2fscenarios/0.3.0");
+});

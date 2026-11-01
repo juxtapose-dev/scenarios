@@ -74,7 +74,8 @@ GitHub release. No service deployment or dependency update runs as part of this.
   workflow has OIDC permission; never paste a token into a log or issue.
 - Publish succeeded but registry verification or GitHub release failed: rerun the
   same workflow run/commit. The identical registry artifact is accepted and not
-  published again. Registry metadata can take time to become readable.
+  published again. Registry verification requests fresh metadata and waits roughly
+  three minutes for propagation; network request timeouts may add to that bound.
 - Same version with different integrity: stop. npm versions are immutable; retain
   the original verified artifact or use a new version. Never unpublish to repair
   an automation mismatch. If rebuilding is not byte-identical, download the
