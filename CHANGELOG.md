@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-11-01
+
+Fix reentrant disposal: an abort listener that calls `dispose()` again now shares
+the original cleanup promise. Async cleanup runs exactly once in reverse order,
+including when a cleanup fails. Add regression coverage for reentry, concurrent
+calls, promise identity and failure retention.
+
 ## 0.2.0 — 2026-11-01
 
 - Add `startMswWorker` to wire browser startup and strict unhandled-request

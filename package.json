@@ -1,6 +1,6 @@
 {
   "name": "@juxtapose/scenarios",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Reproducible UI scenarios for Storybook development and testing.",
   "type": "module",
   "license": "MIT",

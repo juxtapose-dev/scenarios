@@ -391,17 +391,17 @@ export async function prepareScenario<T extends object>(
     dispose() {
       if (disposal) return disposal;
       disposed = true;
-      controller.abort();
       if (!failed) status = "disposed";
-      disposal = (async () => {
-        for (const cleanup of disposers.reverse()) {
+      disposal = Promise.resolve().then(async () => {
+        for (const cleanup of [...disposers].reverse()) {
           try {
             await bounded(cleanup, undefined, 1000);
           } catch (error) {
             recordFailure("cleanup", message(error));
           }
         }
-      })();
+      });
+      controller.abort();
       return disposal;
     },
   };

@@ -26,7 +26,7 @@ and an intentionally unexpected API request. The last story is supposed to fail.
 Install the package in your Storybook project:
 
 ```sh
-pnpm add -D @juxtapose/scenarios@0.2.0
+pnpm add -D @juxtapose/scenarios@0.2.1
 ```
 
 The package is ESM and requires Node 22.19 or later. Storybook and MSW are

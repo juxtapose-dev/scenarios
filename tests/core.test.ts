@@ -110,25 +110,38 @@ describe("execution lifecycle", () => {
     await assertion;
     expect(execution.snapshot().status).toBe("disposed");
   });
-  it("runs every cleanup once in reverse order and preserves failures", async () => {
+  it("shares disposal across abort reentry and concurrent calls, running async cleanup once in reverse order", async () => {
     const execution = await prepareScenario(scenario());
     const order: number[] = [];
+    let reentrant: Promise<void> | undefined;
+    execution.signal.addEventListener("abort", () => {
+      reentrant = execution.dispose();
+    });
     execution.onDispose(() => {
       order.push(1);
     });
-    execution.onDispose(() => {
+    execution.onDispose(async () => {
+      await Promise.resolve();
       order.push(2);
       throw new Error("cleanup failed");
     });
-    execution.onDispose(() => {
+    execution.onDispose(async () => {
       expect(execution.signal.aborted).toBe(true);
+      await Promise.resolve();
       order.push(3);
     });
-    await Promise.all([execution.dispose(), execution.dispose()]);
+    const first = execution.dispose();
+    const concurrent = execution.dispose();
+    expect(reentrant).toBe(first);
+    expect(concurrent).toBe(first);
+    await expect(first).resolves.toBeUndefined();
+    expect(execution.dispose()).toBe(first);
     expect(order).toEqual([3, 2, 1]);
-    expect(execution.snapshot().diagnostics).toEqual([
-      { code: "cleanup", message: "cleanup failed" },
-    ]);
+    expect(execution.snapshot()).toMatchObject({
+      status: "failed",
+      disposed: true,
+      diagnostics: [{ code: "cleanup", message: "cleanup failed" }],
+    });
   });
   it("cleans partial setup while preserving its error", async () => {
     const order: number[] = [];
