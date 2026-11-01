@@ -9,14 +9,16 @@ its acceptance evidence to refine the following one.
 - Milestone 0: npm 0.1.0 released; service PR uses the registry dependency.
 - Milestone 1: implementation and full verification complete (37 unit tests,
   11 React/Svelte browser tests, strict TypeScript 6/7 installed consumers).
-  Service wrapper migration is queued for the next registry release.
+  Released in 0.2.0; the service now uses the public helper without its wrapper.
 - Milestone 2: implementation and full verification complete (47 unit tests,
   15 browser tests, strict installed consumers). Storybook render signals bind
   ownership; args preserve state/readiness, Reload/Rerun creates fresh runs.
+  Released in 0.2.0.
 - Milestone 3: implemented and verified in the library (52 unit tests,
   15 browser tests, strict installed consumers) and the production-consumer
-  harness. Includes typed real-client request cancellation and expected/unexpected
-  network outcome scenarios. Final registry release/service PR update pending.
+  harness (313 unit tests and 67 browser tests). Includes real-client request
+  cancellation and expected/unexpected network outcomes. Released as npm 0.2.0;
+  service PR #414 uses the registry package.
 - Run boundary: user requested shipping milestones 1–3, then stopping.
 - Remaining milestones: not implemented. Instance ownership and expanded Docs
   remain conditional; environment/data contracts, agent inspection and broader
