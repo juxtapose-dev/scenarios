@@ -15,7 +15,9 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "docs/fixture-loading.md",
+    "docs/consumer-protocol.md"
   ],
   "exports": {
     ".": {
@@ -33,7 +35,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && svelte-check --tsconfig example-svelte/tsconfig.json",
     "lint": "biome lint . && node scripts/check-types.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
@@ -42,14 +44,16 @@
     "test": "vitest run",
     "test:browser": "playwright test",
     "storybook": "pnpm prepare:example && storybook dev -p 6006 --disable-telemetry",
-    "build:storybook": "pnpm prepare:example && storybook build --disable-telemetry",
+    "build:storybook": "pnpm build:storybook:react && pnpm build:storybook:svelte",
     "generate": "orval --config orval.config.ts",
     "verify": "pnpm check && pnpm typecheck && pnpm test && pnpm check:generated && pnpm build && pnpm build:storybook && pnpm test:browser && pnpm check:package",
     "prepack": "pnpm build",
     "prepare:example": "msw init example/public --no-save",
     "check:generated": "node scripts/check-generated.mjs",
     "check:package": "node scripts/check-package.mjs",
-    "prepublishOnly": "pnpm verify"
+    "prepublishOnly": "pnpm verify",
+    "build:storybook:react": "pnpm prepare:example && storybook build --disable-telemetry",
+    "build:storybook:svelte": "storybook build --config-dir .storybook-svelte --output-dir storybook-svelte-static --disable-telemetry"
   },
   "dependencies": {
     "@faker-js/faker": "10.6.0"
@@ -70,8 +74,11 @@
     "@babel/parser": "8.0.10",
     "@biomejs/biome": "2.6.4",
     "@playwright/test": "1.64.1",
+    "@storybook/addon-docs": "10.6.5",
     "@storybook/react": "10.6.5",
     "@storybook/react-vite": "10.6.5",
+    "@storybook/svelte-vite": "10.6.5",
+    "@sveltejs/vite-plugin-svelte": "7.1.2",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
@@ -80,7 +87,9 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "storybook": "10.6.5",
-    "typescript": "7.0.2",
+    "svelte": "5.55.7",
+    "svelte-check": "4.4.8",
+    "typescript": "6.0.3",
     "vite": "8.3.5",
     "vitest": "5.0.5"
   },

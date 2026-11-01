@@ -84,6 +84,18 @@ timers, Math.random, crypto, browser locale, or timezone. Inject those applicati
 dependencies explicitly. Deterministic IDs are fixture conveniences, not globally
 unique or cryptographically secure identifiers.
 
+## Fixture-only stories
+
+For data-only stories, `loadScenarioFixtures(scenario)` returns fresh inferred
+fixture data without mounted setup resources. In Storybook, `withFixtures(scenario)`
+provides standard loader annotations and `read(context)` for typed access during
+render. This path supports concurrent inline Docs and works with ordinary React
+and Svelte stories. Definitions with setup callbacks are rejected; use
+`withScenario` for mounted setup, checkpoints, and MSW ownership.
+
+See [fixture-only loading](docs/fixture-loading.md) for Controls, loader composition,
+and framework examples. These APIs are new in the next release after 0.1.0.
+
 ## Connect Storybook and MSW
 
 Install MSW 3 and initialize its worker in your Storybook static directory:

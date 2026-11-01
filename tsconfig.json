@@ -14,5 +14,13 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
-  "include": ["src", "tests", "example", ".storybook", "*.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "example",
+    ".storybook",
+    "*.config.ts",
+    "example-svelte",
+    ".storybook-svelte"
+  ]
 }

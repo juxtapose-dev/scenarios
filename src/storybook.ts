@@ -2,10 +2,39 @@ import {
   describeScenario,
   type Execution,
   type ExecutionSnapshot,
+  loadScenarioFixtures,
   prepareScenario,
   type ScenarioDefinition,
   ScenarioPreparationError,
 } from "./index.js";
+
+/** Standard Storybook loaders with typed, per-render access; safe for inline Docs. */
+export function withFixtures<T extends object>(scenario: ScenarioDefinition<T>) {
+  if (scenario.setup !== undefined)
+    throw new Error("Fixture-only loading cannot run setup; use withScenario");
+  const values = new WeakMap<object, T>();
+  async function load() {
+    const fixtures = await loadScenarioFixtures(scenario);
+    values.set(fixtures, fixtures);
+    return { juxtaposeScenarioFixtures: fixtures };
+  }
+  function read(context: { readonly loaded: Readonly<Record<string, unknown>> }): T {
+    const value = context.loaded.juxtaposeScenarioFixtures;
+    const fixtures = value !== null && typeof value === "object" ? values.get(value) : undefined;
+    if (fixtures === undefined)
+      throw new Error(
+        "Fixture data is missing or belongs to another loader; include this helper's annotations.loaders",
+      );
+    return fixtures;
+  }
+  return {
+    annotations: {
+      parameters: { juxtaposeScenarios: describeScenario(scenario) },
+      loaders: [load],
+    },
+    read,
+  };
+}
 
 export interface CanvasContext {
   id: string;

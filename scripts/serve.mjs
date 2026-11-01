@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 
-const root = resolve("storybook-static");
+const root = resolve(process.argv[2] ?? "storybook-static");
 const types = {
   ".html": "text/html",
   ".js": "text/javascript",
@@ -29,4 +29,4 @@ createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end("Not found");
   }
-}).listen(6107, "127.0.0.1");
+}).listen(Number(process.argv[3] ?? 6107), "127.0.0.1");

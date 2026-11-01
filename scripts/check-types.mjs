@@ -1,10 +1,13 @@
 import { readdir, readFile } from "node:fs/promises";
 import { parse } from "@babel/parser";
+import { parse as parseSvelte } from "svelte/compiler";
 
 const violations = [];
 async function inspect(path) {
   const text = await readFile(path, "utf8");
-  const ast = parse(text, { sourceType: "module", plugins: ["typescript", "jsx"] });
+  const ast = path.endsWith(".svelte")
+    ? parseSvelte(text, { modern: true })
+    : parse(text, { sourceType: "module", plugins: ["typescript", "jsx"] });
   function visit(node) {
     if (node === null || typeof node !== "object") return;
     if (
@@ -32,10 +35,19 @@ async function visitDirectory(directory) {
       await visitDirectory(path);
       continue;
     }
-    if (/\.tsx?$/.test(path)) await inspect(path);
+    if (/\.(tsx?|svelte)$/.test(path)) await inspect(path);
   }
 }
-for (const directory of ["src", "tests", "example", ".storybook"]) await visitDirectory(directory);
+for (const directory of [
+  "src",
+  "tests",
+  "example",
+  "example-svelte",
+  ".storybook",
+  ".storybook-svelte",
+  "scripts",
+])
+  await visitDirectory(directory);
 for (const entry of await readdir(".")) if (entry.endsWith(".ts")) await inspect(entry);
 if (violations.length) {
   console.error(violations.join("\n"));

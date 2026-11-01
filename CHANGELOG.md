@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add `loadScenarioFixtures` and Storybook `withFixtures` for typed data-only
+  stories, including independent concurrent Docs instances and Controls examples.
+- Verify React and Svelte fixture loading in real Storybook browser tests.
+- Compile isolated package consumers with TypeScript 6 and 7, and verify the
+  minimum supported Node version in CI.
+
 ## 0.1.0 — 2026-11-01
 
 Initial release with typed scenario definitions, versioned factories, isolated

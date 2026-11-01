@@ -410,3 +410,17 @@ export async function prepareScenario<T extends object>(
     throw new ScenarioPreparationError(message(error), execution.snapshot(), error);
   }
 }
+
+/** Fresh fixture data without mounted resources, globals, or a readiness lifecycle. */
+export async function loadScenarioFixtures<T extends object>(
+  definition: ScenarioDefinition<T>,
+): Promise<T> {
+  if (definition.setup !== undefined)
+    throw new Error("Fixture-only loading cannot run setup; use prepareScenario or withScenario");
+  const execution = await prepareScenario(definition);
+  try {
+    return execution.fixtures;
+  } finally {
+    await execution.dispose();
+  }
+}

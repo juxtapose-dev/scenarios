@@ -13,9 +13,16 @@ export default defineConfig({
     viewport: { width: 1200, height: 800 },
     trace: "retain-on-failure",
   },
-  webServer: {
-    command: "node scripts/serve.mjs",
-    url: "http://127.0.0.1:6107",
-    reuseExistingServer: false,
-  },
+  webServer: [
+    {
+      command: "node scripts/serve.mjs",
+      url: "http://127.0.0.1:6107",
+      reuseExistingServer: false,
+    },
+    {
+      command: "node scripts/serve.mjs storybook-svelte-static 6108",
+      url: "http://127.0.0.1:6108",
+      reuseExistingServer: false,
+    },
+  ],
 });

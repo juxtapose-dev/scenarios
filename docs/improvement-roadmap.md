@@ -4,6 +4,16 @@ Status: proposed sequence after 0.1.0; this document does not expand the verifie
 support claims of the released package. Prioritize the next milestone, then use
 its acceptance evidence to refine the following one.
 
+## Progress
+
+- Milestone 0: npm 0.1.0 released; service PR uses the registry dependency.
+- Milestone 1: implementation and full verification complete (37 unit tests,
+  11 React/Svelte browser tests, strict TypeScript 6/7 installed consumers).
+  Service wrapper migration is queued for the next registry release.
+- Milestone 2: next. Use Storybook's public render abort signal to distinguish
+  args rerenders from fresh runs; retain standard Rerun/remount controls.
+- Remaining milestones: not started; ownership/Docs expansion remains conditional.
+
 ## Objective and boundaries
 
 Make a named UI state easy for a developer or agent to create, reproduce, review,
