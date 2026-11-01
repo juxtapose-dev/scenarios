@@ -2,6 +2,7 @@
 
 Keep this package independent of Juxtapose and focused on Storybook. Do not add
 another renderer or a generic plugin framework without a concrete requirement.
+Feature flag and experiment management are outside the current scope.
 
 Use strict TypeScript and preserve inference. No type assertions, explicit any,
 non-null assertions, or TypeScript suppression directives. `pnpm check` enforces

@@ -3,8 +3,7 @@
 Reproducible UI scenarios for Storybook development and testing.
 
 `@juxtapose/scenarios` combines named fixtures, isolated Faker generators,
-explicit flags and experiment treatments, scoped MSW mocking, and bounded
-readiness checkpoints. Components keep using their real API clients. Every
+scoped MSW mocking, and bounded readiness checkpoints. Components keep using their real API clients. Every
 execution gets fresh data and cleanup, and exposes a small inspection record.
 
 Juxtapose Scenarios does not depend on Juxtapose’s visual testing packages. It
@@ -24,8 +23,15 @@ The billing workbench uses a real Orval-generated client and MSW 3. Stories cove
 success, empty data, an expected HTTP error, a held loading response, payment,
 and an intentionally unexpected API request. The last story is supposed to fail.
 
-The initial package is prepared for release; it is not automatically published.
-Run `pnpm pack` to produce an installable tarball. Its public entry points are:
+Install the package in your Storybook project:
+
+```sh
+pnpm add -D @juxtapose/scenarios@0.1.0
+```
+
+The package is ESM and requires Node 22.19 or later. Storybook and MSW are
+optional peers; install them when using the corresponding integration.
+Its public entry points are:
 
 ```ts
 import { defineFactory, defineScenario } from "@juxtapose/scenarios";
@@ -54,8 +60,6 @@ export const overdueAccount = defineScenario({
   id: "billing/overdue",
   seed: "billing-demo-v1",
   now: "2026-10-01T12:00:00.000Z",
-  flags: { showPayButton: true },
-  experiments: { paymentCopy: "standard" },
   fixtures: ({ factory }) => ({
     customer: factory("customer:primary", customerFactory),
   }),
@@ -185,28 +189,6 @@ Use `createResponseGate(execution.signal)` to hold a loading response, and call
 `gate.open()` to release it. `gate.wait()` rejects on disposal. Avoid random
 latency or sleeps as a readiness mechanism. See [the network example](example/network.ts).
 
-## Feature flags and experiments
-
-`resolveFlags(defaults, overrides)` rejects unknown flags. `resolveExperiments`
-checks treatment names against a catalog, with inferred TypeScript types and
-runtime validation:
-
-```ts
-import { resolveFlags, resolveExperiments } from "@juxtapose/scenarios";
-
-const flags = resolveFlags({ showPayButton: true }, { showPayButton: false });
-const experiments = resolveExperiments(
-  { paymentCopy: ["standard", "alternative"] },
-  { paymentCopy: "standard" },
-  { paymentCopy: "alternative" },
-);
-```
-
-Pass resolved values into scenario metadata and your real application providers.
-No live assignment, analytics emission, automatic combination matrix, or vendor
-SDK integration is performed. Reuse ordinary factories, helpers, and object
-composition with explicit scenario IDs; there is no hidden inheritance system.
-
 ## Orval
 
 Keep generated API types/clients and project-owned domain fixtures separate.
@@ -233,8 +215,8 @@ static fixtures separately. Never globally reseed Faker around concurrent reques
 
 `describeScenario` returns declaration metadata without running fixtures. In a
 Storybook preview, `window.__JUXTAPOSE_SCENARIOS__.getActive()` returns a versioned snapshot
-containing story/scenario/execution identity, status, checkpoint results, resolved
-assignments, deterministic inputs, fixture keys, and diagnostics. Fixture payloads
+containing story/scenario/execution identity, status, checkpoint results,
+deterministic inputs, fixture keys, and diagnostics. Fixture payloads
 are excluded. Snapshot values are detached from runtime state.
 
 Read the execution ID, wait for the required checkpoint, and read that same ID
@@ -253,7 +235,11 @@ The conformance workbench targets Storybook 10.6.5, React 19.3.1, MSW 3.0.3, and
 Chromium. Tests cover StrictMode mounting, warm sidebar navigation, held-response
 cleanup, repeated data, independent pages, and failure handling.
 
-Only isolated story canvases are supported; concurrent Docs canvases are rejected.
+The `withScenario` lifecycle adapter supports isolated story canvases; concurrent
+Docs canvases are rejected. The fixture core is renderer-independent. Fixture-only
+consumers can prepare fresh data in a Storybook loader and dispose the execution
+before returning it, without using the adapter or acquiring an MSW lease. This
+allows independent fixture data for concurrent Docs stories.
 Args-only updates may reuse a Storybook execution; use remount to reset a scenario.
 HMR, play reruns on a newer same-ID execution, other React versions/frameworks,
 SSR/server-component requests, and cross-browser pixels are not guaranteed.

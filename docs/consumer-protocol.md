@@ -28,7 +28,7 @@ No Juxtapose dependency or integration patch is required.
 ```
 
 The descriptor is abbreviated above; actual output includes seed algorithm,
-Faker version, locale, fixed instant, seed, flags, experiments, and environment
+Faker version, locale, fixed instant, seed, and environment
 metadata. A descriptor is not a content hash of callbacks or fixtures. Consumers
 must separately record the build/source revision and capture environment.
 

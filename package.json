@@ -48,7 +48,8 @@
     "prepack": "pnpm build",
     "prepare:example": "msw init example/public --no-save",
     "check:generated": "node scripts/check-generated.mjs",
-    "check:package": "node scripts/check-package.mjs"
+    "check:package": "node scripts/check-package.mjs",
+    "prepublishOnly": "pnpm verify"
   },
   "dependencies": {
     "@faker-js/faker": "10.6.0"
@@ -82,5 +83,9 @@
     "typescript": "7.0.2",
     "vite": "8.3.5",
     "vitest": "5.0.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

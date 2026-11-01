@@ -12,7 +12,8 @@ including actual HTTP requests and an Orval-generated client.
 
 - No dependency on Juxtapose packages or private application code.
 - No Ladle support, generalized host plugin framework, backend simulator,
-  visual comparison engine, approval UI, or experiment statistics.
+  visual comparison engine, or approval UI.
+- Feature flags and experiments are outside the current scope.
 - Use MSW for interception and Faker for synthetic data. Reuse Orval types and
   generated clients; do not generate another API client.
 - Storybook React is the initial verified framework. Do not advertise Vue,
@@ -52,8 +53,7 @@ contract cannot be expressed with ordinary typed factories and MSW handlers.
 ## Scenario contract
 
 Every definition has a stable explicit ID, description, seed, reference date,
-environment metadata, optional typed flags and experiment assignments, fixtures,
-and named checkpoints. Declaration alone must perform no I/O or random generation.
+environment metadata, fixtures, and named checkpoints. Declaration alone must perform no I/O or random generation.
 
 Use generics to preserve fixture types from creation through setup and play.
 The metadata is JSON-safe; callbacks and handlers remain executable code and are
@@ -138,19 +138,6 @@ Concurrent scenarios in one worker are rejected. Browser isolation handles paral
 Network failures must make readiness fail even if application UI renders an error.
 Expected error responses are distinct from unexpected request failures.
 
-## Flags and experiments
-
-Typed catalogs define flag names/defaults and experiment names/treatments/defaults.
-Resolve explicit assignments before mounting. Unknown names and invalid treatments
-fail runtime validation as well as compile-time checks. Provide resolved values to
-application providers; do not claim support for a vendor SDK without an adapter.
-Record assignment provenance and stable metadata in the execution snapshot.
-
-Named scenarios cover supported combinations. No automatic Cartesian product,
-live random assignment, analytics emission, or inferred statistical conclusions.
-Eligibility/dependency rules can be explicit validation callbacks. Retirement
-metadata is documented; advanced coverage scheduling is deferred.
-
 ## Orval integration
 
 Commit a small synthetic OpenAPI contract for customers/invoices and generate a
@@ -170,8 +157,8 @@ materialized static fixture JSON. Do not introduce unsafe global reseeding wrapp
 ## Inspection and capture integration
 
 Provide a versioned JSON-safe scenario descriptor and execution snapshot with
-scenario ID, execution identity, phase, checkpoints, fixture keys, resolved flags,
-experiments, deterministic environment, and bounded diagnostics. Do not serialize
+scenario ID, execution identity, phase, checkpoints, fixture keys, deterministic
+environment, and bounded diagnostics. Do not serialize
 callback source, fixture payloads, secrets, or absolute source paths.
 
 A Storybook preview bridge exposes only versioned descriptors/snapshots for the
@@ -185,7 +172,7 @@ be achieved through public Storybook metadata without a custom compiler.
 
 Core tests: same inputs match; reordered unrelated fixtures do not alter existing
 values; repeat execution is fresh; different seeds differ; fixed dates are stable;
-invalid IDs/dates/assignments fail; factory collisions fail; extension semantics
+invalid IDs/dates fail; factory collisions fail; extension semantics
 are explicit; snapshots are JSON-safe and exclude bodies; cleanup runs after failure.
 
 Lifecycle tests: timeout, abort, stale completion, double dispose, reverse cleanup,
@@ -195,7 +182,7 @@ MSW tests use the actual Node MSW server: repeated GET consistency, error respon
 unhandled API diagnostics, allowed assets, request journal redaction, handler reset,
 gates and abort, and isolation from prior scenarios.
 
-Type tests ensure inferred fixture access works and wrong flags, treatments, and
+Type tests ensure inferred fixture access works and invalid
 factory overrides are rejected. Use compiler-driven negative fixture tests without
 casts or suppression comments in shipped sources.
 
@@ -213,7 +200,7 @@ tarball content/import smoke check. No claim of pixel determinism from DOM-only 
 1. Review this plan independently, incorporate changes, and freeze a small shared
    API contract before parallel implementation.
 2. Scaffold package, tooling, CI, publication allowlist, and test commands.
-3. Implement deterministic factories, scenarios, assignments, and execution lifecycle.
+3. Implement deterministic factories, scenarios, and execution lifecycle.
 4. Implement MSW ownership/diagnostics/gates and Storybook integration.
 5. Add synthetic Orval workbench and browser conformance tests.
 6. Integrate, review implementation, run quality gates, fix failures, and document
@@ -247,8 +234,6 @@ references. Require finite JSON values in metadata. Same-seed reproducibility is
 bounded by Faker version/locale, factory implementation, seed algorithm, and input.
 Use a specified UTF-8 hash; do not imply collision-free IDs.
 
-Keep assignments typed and validated, but defer elaborate catalog governance,
-retirement automation, automatic matrix generation, and arbitrary deep composition.
 Initial composition is explicit reuse of factories and object spreads with a new
 scenario ID, avoiding a second inheritance system.
 
@@ -258,13 +243,13 @@ third-party generated exception must be narrow, documented, and untouched.
 
 ## Shared implementation contract
 
-Core exports `defineFactory`, `defineScenario`, `prepareScenario`, and assignment
-helpers. `defineFactory<T extends object>({version, build})` receives a fresh Faker,
+Core exports `defineFactory`, `defineScenario`, and `prepareScenario`.
+`defineFactory<T extends object>({version, build})` receives a fresh Faker,
 fixed `now`, and `id(key)` helper. `FixtureContext.factory(key, factory, overrides?)`
 returns inferred T and rejects reused keys. Scenario `fixtures(context)` infers T.
 
 Scenario options: `id`, `description?`, `seed` (string), `now` (ISO instant),
-`fixtures(context)`, `flags?` (boolean record), `experiments?` (string record), and
+`fixtures(context)`, `environment?` (JSON metadata), and
 `setup?(context)`. No networking imports in core. Setup context includes fixtures,
 signal, `onDispose(callback)`, and `fail(code, message)`.
 
@@ -304,8 +289,8 @@ never fixtures. Human story code uses the closure's typed current() accessor.
 
 ## Delivery and verification
 
-The initial implementation includes the core scenario/factory API, typed flag and
-experiment resolvers, bounded execution/checkpoints, reverse cleanup, scoped MSW
+The initial implementation includes the core scenario/factory API, bounded
+execution/checkpoints, reverse cleanup, scoped MSW
 ownership, response gates, Storybook annotations, and the versioned preview bridge.
 An independent synthetic workbench uses Orval-generated clients against MSW, with
 success, empty, expected error, loading, payment, and unexpected-request stories.
@@ -344,8 +329,6 @@ Scope refinements from implementation:
   cloning. Diagnostic metadata remains strictly finite JSON.
 - Initial composition is ordinary factory/helper reuse and explicit scenario
   definitions. There is no scenario inheritance or field-stream framework.
-- Flags and experiments have typed/runtime assignment validation, but no automatic
-  provenance graph, governance/retirement engine, or combination scheduler.
 - Core locale is pinned to English. Environment metadata does not enforce browser
   locale/timezone or patch application clocks/randomness.
 - Args-only updates, HMR, repeated same-ID play on a replacement execution, render

@@ -33,8 +33,6 @@ export interface ScenarioDefinition<T extends object> {
   readonly seed: string;
   readonly now: string;
   readonly fixtures: (context: FixtureContext) => T;
-  readonly flags?: Readonly<Record<string, boolean>>;
-  readonly experiments?: Readonly<Record<string, string>>;
   readonly environment?: Readonly<Record<string, JsonValue>>;
   readonly setup?: (context: SetupContext<T>) => void | Promise<void>;
 }
@@ -47,8 +45,6 @@ export interface ScenarioDescriptor {
   readonly seedAlgorithm: "fnv1a-utf8-v1";
   readonly fakerVersion: "10.6.0";
   readonly locale: "en";
-  readonly flags: Readonly<Record<string, boolean>>;
-  readonly experiments: Readonly<Record<string, string>>;
   readonly environment: Readonly<Record<string, JsonValue>>;
 }
 export type ExecutionStatus =
@@ -177,12 +173,6 @@ function validate<T extends object>(definition: ScenarioDefinition<T>): void {
   )
     throw new Error("now must be a canonical ISO UTC instant");
   jsonSafe(definition.environment ?? {});
-  jsonSafe(definition.flags ?? {});
-  jsonSafe(definition.experiments ?? {});
-  for (const value of Object.values(definition.flags ?? {}))
-    if (typeof value !== "boolean") throw new Error("Flags must be boolean");
-  for (const value of Object.values(definition.experiments ?? {}))
-    if (typeof value !== "string") throw new Error("Experiments must be strings");
 }
 function hash(parts: readonly string[]): number {
   let result = 2166136261;
@@ -202,10 +192,6 @@ export function defineScenario<T extends object>(
   validate(definition);
   return Object.freeze({
     ...definition,
-    ...(definition.flags ? { flags: Object.freeze({ ...definition.flags }) } : {}),
-    ...(definition.experiments
-      ? { experiments: Object.freeze({ ...definition.experiments }) }
-      : {}),
     ...(definition.environment
       ? { environment: freezeMetadata(structuredClone(definition.environment)) }
       : {}),
@@ -224,8 +210,6 @@ export function describeScenario<T extends object>(
     seedAlgorithm: "fnv1a-utf8-v1",
     fakerVersion: "10.6.0",
     locale: "en",
-    flags: structuredClone(definition.flags ?? {}),
-    experiments: structuredClone(definition.experiments ?? {}),
     environment: structuredClone(definition.environment ?? {}),
   };
 }
@@ -425,38 +409,4 @@ export async function prepareScenario<T extends object>(
     await execution.dispose();
     throw new ScenarioPreparationError(message(error), execution.snapshot(), error);
   }
-}
-
-export function resolveFlags<T extends Record<string, boolean>>(
-  defaults: T,
-  overrides: { [K in keyof T]?: boolean } = {},
-): { [K in keyof T]: boolean } {
-  for (const key of Object.keys(overrides))
-    if (!Object.hasOwn(defaults, key)) throw new Error(`Unknown flag: ${key}`);
-  const result = { ...defaults, ...overrides };
-  for (const value of Object.values(result))
-    if (typeof value !== "boolean") throw new Error("Flags must be boolean");
-  return result;
-}
-
-export function resolveExperiments<const T extends Record<string, readonly string[]>>(
-  catalog: T,
-  defaults: { [K in keyof T]: T[K][number] },
-  overrides: Partial<{ [K in keyof T]: T[K][number] }> = {},
-): { [K in keyof T]: T[K][number] } {
-  for (const key of Object.keys(overrides)) {
-    if (!Object.hasOwn(catalog, key)) throw new Error(`Unknown experiment: ${key}`);
-  }
-  const result = { ...defaults, ...overrides };
-  for (const key of Object.keys(catalog)) {
-    const treatments = catalog[key];
-    const value = result[key];
-    if (!treatments || typeof value !== "string" || !treatments.includes(value)) {
-      throw new Error(`Invalid treatment for experiment: ${key}`);
-    }
-  }
-  for (const key of Object.keys(defaults)) {
-    if (!Object.hasOwn(catalog, key)) throw new Error(`Unknown experiment: ${key}`);
-  }
-  return result;
 }

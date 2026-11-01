@@ -46,13 +46,9 @@ function story(mode: BillingMode) {
   return {
     ...scenarioStory.annotations,
     render: () => {
-      const descriptor = scenarioStory.current().snapshot().descriptor;
       return (
         <StrictMode>
-          <Billing
-            showPayButton={descriptor.flags.showPayButton ?? true}
-            paymentCopy={descriptor.experiments.paymentCopy ?? "standard"}
-          />
+          <Billing />
         </StrictMode>
       );
     },

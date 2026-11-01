@@ -25,8 +25,6 @@ export function billingScenario(id: string) {
     description: `Billing: ${id}`,
     seed: "billing-demo",
     now: "2026-01-15T12:00:00.000Z",
-    flags: { showPayButton: true },
-    experiments: { paymentCopy: "standard" },
     fixtures: (context) => ({
       customer: context.factory("customer", customer),
       invoice: context.factory("invoice", invoice),

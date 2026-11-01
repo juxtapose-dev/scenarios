@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const entry = fileURLToPath(new URL("../src/index.js", import.meta.url));
-const imports = `import { defineFactory, defineScenario, prepareScenario, resolveFlags, resolveExperiments } from ${JSON.stringify(entry)};\n`;
+const imports = `import { defineFactory, defineScenario, prepareScenario } from ${JSON.stringify(entry)};\n`;
 const factory = `const customer = defineFactory({ version: "1", build: ({ faker }) => ({ name: faker.person.fullName(), age: 42 }) });\n`;
 const scenario = `const scenario = defineScenario({ id: "typed.sample", seed: "fixed", now: "2026-01-01T00:00:00.000Z", fixtures: context => ({ customer: context.factory("customer", customer) }) });\n`;
 
@@ -55,7 +55,7 @@ async function compile(source: string): Promise<{ status: number | null; output:
   }
 }
 
-it("compiles inferred fixtures, assignments, and provider wiring", async () => {
+it("compiles inferred fixtures and provider wiring", async () => {
   const result = await compile(
     factory +
       scenario +
@@ -63,8 +63,6 @@ it("compiles inferred fixtures, assignments, and provider wiring", async () => {
 const execution = await prepareScenario(scenario);
 function provider(value: { name: string; age: number }) { return value.name; }
 const label: string = provider(execution.fixtures.customer);
-const enabled: boolean = resolveFlags({ beta: false }, { beta: true }).beta;
-const treatment: "control" | "compact" = resolveExperiments({ checkout: ["control", "compact"] }, { checkout: "control" }, { checkout: "compact" }).checkout;
 await execution.dispose();
 `,
   );
@@ -87,16 +85,6 @@ it.each([
       scenario +
       `const execution = await prepareScenario(scenario); execution.fixtures.customer.missing;`,
     code: "TS2339",
-  },
-  {
-    name: "unknown flags",
-    source: `resolveFlags({ beta: false }, { missing: true });`,
-    code: "TS2353",
-  },
-  {
-    name: "invalid experiment treatments",
-    source: `resolveExperiments({ checkout: ["control", "compact"] }, { checkout: "control" }, { checkout: "invalid" });`,
-    code: "TS2322",
   },
 ])(
   "rejects $name with the expected compiler diagnostic",

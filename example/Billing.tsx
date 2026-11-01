@@ -6,13 +6,7 @@ type State =
   | { kind: "loading" }
   | { kind: "error" }
   | { kind: "ready"; customer: Customer; invoices: Invoice[] };
-export function Billing({
-  showPayButton = true,
-  paymentCopy = "standard",
-}: {
-  showPayButton?: boolean;
-  paymentCopy?: string;
-}) {
+export function Billing() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const lifetime = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -68,9 +62,9 @@ export function Billing({
               <span>
                 Invoice {invoice.id}: ${(invoice.amountDue / 100).toFixed(2)} — {invoice.status}
               </span>{" "}
-              {showPayButton && invoice.status === "overdue" && (
+              {invoice.status === "overdue" && (
                 <button type="button" onClick={pay}>
-                  {paymentCopy === "alternative" ? "Settle invoice" : "Pay invoice"}
+                  Pay invoice
                 </button>
               )}
             </li>

@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  defineFactory,
-  defineScenario,
-  describeScenario,
-  prepareScenario,
-  resolveExperiments,
-  resolveFlags,
-} from "../src/index.js";
+import { defineFactory, defineScenario, describeScenario, prepareScenario } from "../src/index.js";
 
 const person = defineFactory({
   version: "1",
@@ -154,20 +147,6 @@ describe("execution lifecycle", () => {
     ).rejects.toThrow("setup original");
     expect(order).toEqual([1]);
   });
-  it("validates assignment keys and values", () => {
-    expect(resolveFlags({ beta: false }, { beta: true })).toEqual({ beta: true });
-    expect(() => resolveFlags({ beta: false }, { ...{ beta: true, unknown: true } })).toThrow(
-      "Unknown",
-    );
-  });
-});
-
-it("resolves typed treatments and rejects runtime invalid assignments", () => {
-  const catalog = { checkout: ["control", "compact"] };
-  expect(resolveExperiments(catalog, { checkout: "control" }, { checkout: "compact" })).toEqual({
-    checkout: "compact",
-  });
-  expect(() => resolveExperiments(catalog, { checkout: "invalid" })).toThrow("Invalid treatment");
 });
 
 it("bounds stuck cleanup and continues reverse cleanup", async () => {
