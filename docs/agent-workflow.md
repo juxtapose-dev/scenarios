@@ -71,6 +71,8 @@ Consumer workflow:
 2. Wait for the correct story and pin its execution ID once observed. Poll
    `inspectScenario(observed, { storyId, executionId, checkpoints })` until ready.
    Stop on `blocked`; report its code/message and the snapshot diagnostics.
+   A different story is `waiting` before selection, but `blocked` after an
+   execution ID has been pinned.
 3. Apply your font, asset, layout, animation and paint barriers. Read and assess
    again with the pinned ID immediately before capture.
 4. Create evidence metadata with `createScenarioEvidence(observed)`. This requires

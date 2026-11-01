@@ -163,3 +163,24 @@ it("joins only verified catalog stories from public index v5 and excludes source
     }),
   ).toThrow("invalid");
 });
+
+it("stops a pinned capture when navigation selects another story", async () => {
+  const run = await prepareScenario(scenario);
+  const observed = { storyId: "another--story", execution: run.snapshot() };
+  expect(
+    inspectScenario(observed, { ...target, executionId: run.snapshot().executionId }),
+  ).toMatchObject({ status: "blocked", code: "wrong-story" });
+  await run.dispose();
+});
+
+it("omits extra Storybook entry fields that structural typing permits", () => {
+  const entry = {
+    storyId: "billing--success",
+    scenario: describeScenario(scenario),
+    importPath: "/private/source.tsx",
+    fixture: "private-payload",
+  };
+  const catalog = createScenarioCatalog([entry]);
+  expect(catalog.entries[0]).toEqual({ storyId: entry.storyId, scenario: entry.scenario });
+  expect(JSON.stringify(catalog)).not.toContain("private");
+});

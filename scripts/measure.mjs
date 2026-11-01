@@ -166,6 +166,16 @@ try {
         outputBytes: await bytes(join(directory, mode)),
       };
   }
+  if (process.argv.includes("--check")) {
+    if (report.bundles.core.gzipBytes > 180000)
+      throw new Error(
+        "Core bundle exceeded 180 KB gzip; check for accidental inclusion of other Faker locales",
+      );
+    if (report.bundles.inspection.gzipBytes > 4000)
+      throw new Error(
+        "Inspection bundle exceeded 4 KB gzip; keep it independent of generator/framework runtimes",
+      );
+  }
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await rm(local, { recursive: true, force: true });

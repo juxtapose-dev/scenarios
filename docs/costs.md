@@ -5,6 +5,9 @@ Measurements are local observations, not support/performance guarantees. Run
 Add `-- --storybook` to compare three alternating builds of a minimal React story
 with and without fixture loading. The script creates temporary files, cleans them,
 and prints JSON. It does not publish or upload anything.
+`pnpm check:costs` (included in verification) guards total core bundle size at
+180 KB gzip and inspection at 4 KB gzip. These generous byte limits catch accidental
+locale/runtime imports; no hardware-dependent timing limit is enforced.
 
 ## Representative measurements
 
@@ -15,10 +18,10 @@ Sizes below use decimal KB and gzip, not installed dependency sizes.
 | Artifact                                            |   JavaScript |         gzip |
 | --------------------------------------------------- | -----------: | -----------: |
 | Fixture core bundle, total including deferred Faker | about 463 KB | about 157 KB |
-| Initial fixture core chunk                          | about 8.6 KB | about 3.0 KB |
+| Initial fixture core chunk                          | about 8.7 KB | about 3.0 KB |
 | Deferred English Faker chunk                        | about 454 KB | about 154 KB |
 | Faker + English locale alone                        | about 454 KB | about 154 KB |
-| Inspection (catalog/readiness/evidence)             | about 4.1 KB | about 1.5 KB |
+| Inspection (catalog/readiness/evidence)             | about 4.5 KB | about 1.6 KB |
 
 The measured library build includes exported functions and uses Vite's minified ES
 library output. Gzip totals sum individual chunks, reflecting separate requests.
@@ -33,7 +36,9 @@ Five fresh Node process samples reduced the median core import from about 41 ms
 to about 0.7 ms on this machine. That moves generator initialization to preparation;
 it does not remove its total cost. Inspection imports take roughly 0.4 ms and
 never load Faker. An aborted preparation rechecks cancellation after loading the
-generator before running any fixture callback.
+generator before running any fixture callback. Waiting for that module has a
+five-second bound and responds to execution cancellation; loading failures remain
+in the failed preparation snapshot.
 
 Minimal Storybook build medians were about 0.76 s without and 0.78 s with fixture
 loading, with roughly 407 KB more uncompressed output for the scenario build.

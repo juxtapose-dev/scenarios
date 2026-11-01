@@ -35,10 +35,19 @@ script, updated consumer guides and roadmap, then full pnpm verify.
 
 ## Verification
 
-Full `pnpm verify` passed: 62 unit tests, 17 Chromium cases covering React/Svelte,
+Full `pnpm verify` passed: 66 unit tests, 18 Chromium cases covering React/Svelte,
 strict TypeScript 6/7 tarball consumers and negative diagnostics, generator drift,
 and the 21-file publication allowlist. Browser checks include two locale/timezone
 contexts and invalid response validation through the actual generated client/MSW.
 `pnpm catalog:example` resolved explicit entries against the built public index.
 Measurement scripts ran before/after deferred Faker loading; conclusions and
 limitations are recorded in `costs.md`. No package was published for this batch.
+
+Review corrections: generator loading is bounded and abortable with failure
+snapshots; pinned captures stop on cross-story navigation; catalog entries strip
+structurally permitted extra fields. Regressions include a real blocked-chunk
+preparation timeout and recovery through a fresh browser load.
+
+Re-measurement caught whole-namespace imports pulling in all Faker locales during
+the loading fix. The loader now narrows the dynamic module inside its callback;
+verification guards total core and inspection bundle sizes, without timing limits.

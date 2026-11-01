@@ -56,7 +56,7 @@
     "storybook": "pnpm prepare:example && storybook dev -p 6006 --disable-telemetry",
     "build:storybook": "pnpm build:storybook:react && pnpm build:storybook:svelte",
     "generate": "orval --config orval.config.ts",
-    "verify": "pnpm check && pnpm typecheck && pnpm test && pnpm check:generated && pnpm build && pnpm build:storybook && pnpm check:catalog && pnpm test:browser && pnpm check:package",
+    "verify": "pnpm check && pnpm typecheck && pnpm test && pnpm check:generated && pnpm build && pnpm check:costs && pnpm build:storybook && pnpm check:catalog && pnpm test:browser && pnpm check:package",
     "prepack": "pnpm build",
     "prepare:example": "msw init example/public --no-save",
     "check:generated": "node scripts/check-generated.mjs",
@@ -66,7 +66,8 @@
     "build:storybook:svelte": "storybook build --config-dir .storybook-svelte --output-dir storybook-svelte-static --disable-telemetry",
     "measure": "pnpm build && node scripts/measure.mjs",
     "catalog:example": "pnpm --silent build && node scripts/export-example-catalog.mjs",
-    "check:catalog": "node scripts/export-example-catalog.mjs --check"
+    "check:catalog": "node scripts/export-example-catalog.mjs --check",
+    "check:costs": "node scripts/measure.mjs --check"
   },
   "dependencies": {
     "@faker-js/faker": "10.6.0"

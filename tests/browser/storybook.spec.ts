@@ -125,3 +125,43 @@ test("invalid mock contract fails inspection instead of blessing the error UI", 
     "execution-failed",
   );
 });
+
+test("a stalled generator chunk fails preparation and a reload can recover", async ({ page }) => {
+  let release = () => {};
+  let requested = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const loading = new Promise<void>((resolve) => {
+    requested = resolve;
+  });
+  await page.route("**/assets/dist-*.js", async (route) => {
+    requested();
+    await gate;
+    await route.continue();
+  });
+  try {
+    await page.goto("/iframe.html?id=billing--success&viewMode=story", {
+      waitUntil: "domcontentloaded",
+    });
+    await loading;
+    await expect
+      .poll(
+        () => page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive()?.execution.status),
+        { timeout: 10000 },
+      )
+      .toBe("failed");
+    const failed = await page.evaluate(() => window.__JUXTAPOSE_SCENARIOS__?.getActive());
+    expect(failed?.execution.diagnostics).toContainEqual({
+      code: "fixtures",
+      message: "Timed out after 5000ms",
+    });
+    release();
+    await page.unrouteAll({ behavior: "wait" });
+    await page.reload();
+    const recovered = await expectReady(page, "loaded");
+    expect(recovered?.execution.executionId).not.toBe(failed?.execution.executionId);
+  } finally {
+    release();
+  }
+});

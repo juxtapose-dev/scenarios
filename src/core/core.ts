@@ -296,13 +296,20 @@ export async function prepareScenario<T extends object>(
   const source =
     options.sourceRevision !== undefined ? { sourceRevision: options.sourceRevision } : {};
   const descriptor = describeScenario(definition);
-  const { en, Faker } = await import("@faker-js/faker");
-  if (options.signal?.aborted) throw new Error("Scenario preparation aborted");
   const keys = new Set<string>();
   const factories: FactoryRecord[] = [];
   const executionId = crypto.randomUUID();
-  const fixtures = (() => {
+  const fixtures = await (async () => {
     try {
+      const { en, Faker } = await bounded(
+        async () => {
+          const { en, Faker } = await import("@faker-js/faker");
+          return { en, Faker };
+        },
+        options.signal,
+        5000,
+      );
+      if (options.signal?.aborted) throw new Error("Scenario preparation aborted");
       return cloneFixtures(
         definition.fixtures({
           factory(key, factory, overrides) {

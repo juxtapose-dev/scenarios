@@ -22,9 +22,14 @@ export function createScenarioCatalog(entries: readonly ScenarioCatalogEntry[]):
   }
   return structuredClone({
     protocolVersion: 1,
-    entries: [...entries].sort((a, b) =>
-      a.storyId < b.storyId ? -1 : a.storyId > b.storyId ? 1 : 0,
-    ),
+    entries: [...entries]
+      .sort((a, b) => (a.storyId < b.storyId ? -1 : a.storyId > b.storyId ? 1 : 0))
+      .map(({ storyId, scenario, title, name }) => ({
+        storyId,
+        scenario,
+        ...(title !== undefined ? { title } : {}),
+        ...(name !== undefined ? { name } : {}),
+      })),
   });
 }
 
@@ -121,9 +126,11 @@ export function inspectScenario(
     );
   if (observed.storyId !== target.storyId)
     return result(
-      "waiting",
+      target.executionId !== undefined ? "blocked" : "waiting",
       "wrong-story",
-      `Waiting for story ${target.storyId}; observed ${observed.storyId}.`,
+      target.executionId !== undefined
+        ? `The selected story was replaced by ${observed.storyId}; discard its evidence and select a new run.`
+        : `Waiting for story ${target.storyId}; observed ${observed.storyId}.`,
     );
   if (target.executionId !== undefined && run.executionId !== target.executionId)
     return result(
