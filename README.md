@@ -290,8 +290,9 @@ pnpm check:package   # Pack allowlist and isolated import smoke check
 ```
 
 `pnpm verify` runs the full local quality gate. CI runs the same checks and
-repeated browser conformance without retries. There is no automatic publishing
-workflow. Read [the implementation plan](docs/implementation-plan.md) for scope,
+repeated browser conformance without retries. A manually dispatched release
+workflow publishes the verified tarball using npm Trusted Publishing; merges do
+not trigger publication. See [the release guide](https://github.com/juxtapose-dev/scenarios/blob/main/docs/releases.md). Read [the implementation plan](docs/implementation-plan.md) for scope,
 review decisions, and deferred work.
 
 MIT licensed.
